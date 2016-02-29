@@ -22,16 +22,18 @@ https://github.com/CrossRef/rest-api-doc/blob/master/rest_api.md
 
 #TODO: Expose common aspects via def
 
-"""
-query	limited DisMax query terms
-filter={filter_name}:{value}	filter results by specific fields
-rows={#}	results per per page
-offset={#}	result offset
-sample={#}	return random N results
-sort={#}	sort results by a certain field
-order={#}	set the sort order to asc or desc
-facet=t	enable facet information in responses
 
+
+"""
+The works component can be appended to other resources.
+
+resource	description
+/works/{doi}	returns information about the specified CrossRef DOI
+/funders/{funder_id}/works	returns list of works associated with the specified funder_id
+/types/{type_id}/works	returns list of works of type type
+/prefixes/{owner_prefix}/works	returns list of works associated with specified owner_prefix
+/members/{member_id}/works	returns list of works associated with a CrossRef member (deposited by a CrossRef member)
+/journals/{issn}/works	returns a list of works in the given journal
 """
 
 
@@ -42,6 +44,32 @@ import sys
 import re
 
 PY2 = int(sys.version[0]) == 2
+
+class QueryOptions(object):
+    pass
+
+"""
+query	limited DisMax query terms
+filter={filter_name}:{value}	filter results by specific fields
+rows={#}	results per per page
+offset={#}	result offset
+sample={#}	return random N results
+sort={#}	sort results by a certain field
+
+    score or relevance	  Sort by relevance score
+    updated	Sort by date of most recent change to metadata. Currently the same as deposited.
+    deposited	Sort by time of most recent deposit
+    indexed	Sort by time of most recent index
+    published	Sort by publication date
+
+
+
+order={#}	set the sort order to asc or desc
+facet=t	enable facet information in responses
+
+
+
+"""
 
 class API(object):
     

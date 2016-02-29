@@ -2,6 +2,8 @@
 """
 """
 
+from datetime import datetime
+
 from .utils import get_truncated_display_string as td
 from .utils import get_list_class_display as cld
 
@@ -56,6 +58,11 @@ class ResponseObject(object):
         This should be overloaded by the subclass.
         """
         return []
+        
+class WorkList(ResponseObject):
+    
+    def __init__(self,json,m):
+        pass
 
 class Work(ResponseObject):
     
@@ -73,7 +80,28 @@ class Work(ResponseObject):
         ex. http://id.crossref.org/prefix/10.1109
     type : string
         journal-article
+    page :
+    subject : list
+    score :
+    member :
+    created :
+        ex. {'date-parts': [[2011, 8, 31]], 'timestamp': 1314805584000, 'date-time': '2011-08-31T15:46:24Z'}
+    volume :
+    published_print :
+    indexed :
+    
     """
+    
+    """
+    TODO:
+    ------
+    - might remove title and subtitle list
+    - for multiple ISSN, might split to print and online
+    - do I want to do anything with the times?
+    - is subject always singular?
+
+    """    
+    
     def __init__(self,json,api):
         super(Work, self).__init__(json)
         import pdb
