@@ -285,9 +285,14 @@ class API(object):
         
     def funders_list(self,options=None,_filter=None):
 
-        #url = self.BASE_URL + 'works/'
+        #url = self.BASE_URL + 'works'
         
         pass
+    
+    def _types_list(self):
+        
+        url = self.BASE_URL + 'types'
+        return self._make_list_request(url,models.TypesList,None,None)
     
 class ResponseMessageInfo(object):
 
@@ -308,9 +313,12 @@ class ResponseMessageInfo(object):
         self.is_list = is_list
         if is_list:
             self.total_results = self.json['total_results']
-            self.query = self.json['query']
-            self.items_per_page = self.json['items_per_page']
-            self.facets = self.json['facets']
+            
+            #These weren't present with types-list 
+            #Where is that documented?????
+            self.query = self.json.get('query')
+            self.items_per_page = self.json.get('items_per_page')
+            self.facets = self.json.get('facets')
             #This is a bit sloppy, the message actually contains all the
             #info above and items, which we'll then parse out in the main
             #class ...

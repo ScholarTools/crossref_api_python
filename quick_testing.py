@@ -9,6 +9,11 @@ c = api.API() #c => CrossRef
 #m = c.doi_meta('http://dx.doi.org/10.1088/1741-2560/6/5/055009')
 #m = c.doi_meta('http://dx.doi.org/10.1642/0004-8038(2002)119[0088:SSCPEO]2.0.CO;2')
 
+wtf = c._types_list()
+
+import pdb
+pdb.set_trace()
+
 q = api.QueryOptions()
 
 q.sample = 100

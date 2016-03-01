@@ -49,6 +49,23 @@ class ResponseObject(object):
         This should be overloaded by the subclass.
         """
         return []
+
+class TypesList(ResponseObject):
+    
+    def __init__(self,json,api):
+        super(TypesList, self).__init__(json)    
+        
+        import pdb
+        pdb.set_trace()
+
+class Type(ResponseObject):
+    """
+    Attributes
+    ----------
+    label
+    id 
+    """
+    pass
         
 class WorkList(ResponseObject):
     
@@ -88,7 +105,8 @@ class Work(ResponseObject):
     prefix : 
         ex. http://id.crossref.org/prefix/10.1109
     type : string
-        known types include:
+        known types include: TODO: Update with output of types-list
+        #and add a test for inclusion and exclusion
         - book-chapter
         - component
         - dataset
