@@ -235,8 +235,6 @@ class API(object):
             
         temp = ResponseMessageInfo(j,is_list)
         object_json = temp.json
-        import pdb
-        pdb.set_trace()
             
         """
         {'status': 'failed', 'message-type': 'validation-failure', 

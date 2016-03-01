@@ -4,10 +4,10 @@
 
 from datetime import datetime
 
-from .utils import get_truncated_display_string as td
-from .utils import get_list_class_display as cld
-
 from . import utils
+td = utils.get_truncated_display_string
+cld = utils.get_list_class_display
+
 
 class ResponseObject(object):
     
@@ -54,9 +54,7 @@ class TypesList(ResponseObject):
     
     def __init__(self,json,api):
         super(TypesList, self).__init__(json)    
-        
-        import pdb
-        pdb.set_trace()
+        self.docs = [Type(x,api) for x in self.json]
 
 class Type(ResponseObject):
     """
@@ -65,7 +63,23 @@ class Type(ResponseObject):
     label
     id 
     """
-    pass
+    def __init__(self,json,api):
+        super(Type, self).__init__(json)    
+
+    def _null(self):
+        self.label = None
+        self.id = None
+
+    @classmethod
+    def fields(cls):
+        return _l2d([
+        'label', None, 
+        'id',None])
+        
+    def __repr__(self,pv_only=False):
+        pv = ['label',self.label,
+                'id',self.id]
+        return utils.property_values_to_string(pv)
         
 class WorkList(ResponseObject):
     
@@ -191,7 +205,6 @@ class Work(ResponseObject):
         'volume', None])
                 
     def __repr__(self,pv_only=False):
-        #TODO: Set this up like it looks in Mendeley
         pv = ['ISSN',self.ISSN,
                 'title',self.title,
                 'URL',self.URL,
