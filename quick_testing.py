@@ -3,11 +3,29 @@
 """
 
 from crossref import api
-c = api.API()
+c = api.API() #c => CrossRef
 
 #m = c.doi_meta('10.1109/TNSRE.2011.2163145')
-m = c.doi_meta('http://dx.doi.org/10.1088/1741-2560/6/5/055009')
+#m = c.doi_meta('http://dx.doi.org/10.1088/1741-2560/6/5/055009')
 #m = c.doi_meta('http://dx.doi.org/10.1642/0004-8038(2002)119[0088:SSCPEO]2.0.CO;2')
+
+q = api.QueryOptions()
+
+q.sample = 100
+
+print(q)
+
+#This apparently is not allowed
+m = c.doi_list(options=q)
+
+import pdb
+pdb.set_trace()
+
+
+
+#temp = api.
+
+#Next, let's sample some dois and get the unique keys 
 
 """
            ISSN: ['1534-4320', '1558-0210']
@@ -43,6 +61,24 @@ container-title: None
          volume: 6
 published_print: None
         indexed: {'date-parts': [[2015, 12, 26]], 'date-time': '2015-12-26T16:13:53Z', 'timestamp': 1451146433719}
+"""
+
+"""
+           ISSN: ['0004-8038']
+          title: ['SEABIRD SUPERTREES: COMBINING PARTIAL ESTIMATES OF PROCELLARIIFORM PHYLOGENY']
+            URL: http://dx.doi.org/10.1642/0004-8038(2002)119[0088:sscpeo]2.0.co;2
+       subtitle: []
+container-title: None
+         prefix: http://id.crossref.org/prefix/10.1642
+           type: journal-article
+           page: 88
+        subject: ['Animal Science and Zoology', 'Ecology, Evolution, Behavior and Systematics']
+          score: 1.0
+         member: http://id.crossref.org/member/1217
+        created: {'date-time': '2006-07-12T20:06:57Z', 'timestamp': 1152734817000, 'date-parts': [[2006, 7, 12]]}
+         volume: 119
+published_print: None
+        indexed: {'date-time': '2015-12-20T17:42:10Z', 'timestamp': 1450633330082, 'date-parts': [[2015, 12, 20]]}
 """
 
 import pdb

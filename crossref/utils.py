@@ -114,3 +114,6 @@ def assign_json(json_data, field_name, optional=True, default=None):
         return default
     else:
         raise Exception("TODO: Fix me")
+        
+def clean_dict_keys(d):
+    return { x.replace('-', '_'): d[x] for x in d.keys() }
