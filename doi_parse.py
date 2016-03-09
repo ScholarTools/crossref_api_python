@@ -2,7 +2,7 @@
 from collections import Counter
 
 # Read in dois.txt and separate by commas
-f = open('../dois.txt', 'r')
+f = open('dois.txt', 'r')
 dois = f.read().split(',')
 
 # Remove all "" elements
@@ -20,6 +20,13 @@ for x in range(0,len(dois)):
 # Count and return each unique prefix with the number of times it occurs
 p = Counter(prefixes)
 top = p.most_common(len(p))
+
+'''
+text = open('doi_to_provider.txt', 'a')
+for x in range(0, len(top)):
+    text.write(str(top[x]))
+    text.write('\n')
+'''
 
 print top
 
@@ -40,7 +47,6 @@ print len(prefixes)
 
 '''
 TODO:
-    - Set up git and push this into one of the existing ScholarTools repositories
     - Use mendeley_python and/or crossref_api_python to resolve each DOI in examples[] to a provider
     - After resolving to providers, sum up the multiple instances of each provider to get the four most popular
         - e.g. multiple prefixes could link to the same provider, so be sure to incorporate the frequencies linked to
