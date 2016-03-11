@@ -16,11 +16,10 @@ pdb.set_trace()
 
 q = api.QueryOptions()
 
-q.sample = 100
+q.sample = 10
 
 print(q)
 
-#This apparently is not allowed
 m = c.doi_list(options=q)
 
 import pdb

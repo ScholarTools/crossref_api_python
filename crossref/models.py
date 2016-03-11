@@ -29,8 +29,11 @@ class ResponseObject(object):
         #document.yeear <= instead of year
         d = self.fields()
         if name in d:
-            #TODO: Build in evaluation of methods
-            value = self.json.get(name)
+            fh = d[name]
+            if fh is None:
+                value = self.json.get(name)
+            else:
+                value = fh(self,name)
             return value
         else:
             raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
@@ -103,6 +106,12 @@ class WorkList(ResponseObject):
         #import pdb
         #pdb.set_trace()
         #self.all_keys = set([])
+        
+    def __repr__(self):
+        pv = ['api',cld(self.api),
+                'docs',cld(self.docs)]
+
+        return utils.property_values_to_string(pv)        
 
 class Work(ResponseObject):
     
@@ -158,17 +167,14 @@ class Work(ResponseObject):
         super(Work, self).__init__(json)
         
     def _null(self):
-        """
-        TODO: Ask on SO about this, is there an alternative approach?
-        It does expose tab completion in Spyder ...
-        """
+        #This will change, need to expand work by types
         self.DOI = None
         self.ISSN = None
         self.URL = None
     
     @classmethod
     def fields(cls):
-        #TODO: Let's insert transforming functions here
+        #TODO: this is not done, will also need to split by type
         return _l2d([
         'DOI', None, 
         'ISBN',None,
@@ -199,12 +205,13 @@ class Work(ResponseObject):
         'source', None,  
         'subject', None, 
         'subtitle', None, 
-        'title', None, 
+        'title', _list_to_element,
+        'all_titles',lambda x,y: _get_alternate_field(x,'title'), #This is an example, we might not really use it
         'type', None,
         'update_policy',None,
         'volume', None])
                 
-    def __repr__(self,pv_only=False):
+    def __repr__(self):
         pv = ['ISSN',self.ISSN,
                 'title',self.title,
                 'URL',self.URL,
@@ -220,10 +227,8 @@ class Work(ResponseObject):
                 'volume',self.volume,
                 'published_print',self.published_print,
                 'indexed',self.indexed]
-        if pv_only:
-            return pv
-        else:
-            return utils.property_values_to_string(pv)
+
+        return utils.property_values_to_string(pv)
             
 def _l2d(input_list):
     #property-value pairs to dictionary
@@ -231,3 +236,15 @@ def _l2d(input_list):
     values = input_list[1::2]
     return {k:v for k,v in zip(keys,values)}
     
+def _list_to_element(self,name):
+    """
+    This is useful in cases in which we get a list which usually only has 1 element
+    """
+    value = self.json.get(name)
+    if value is None:
+        return None
+    else:
+        return value[0]
+    
+def _get_alternate_field(self,alternate_name):
+    return self.json.get(alternate_name)
