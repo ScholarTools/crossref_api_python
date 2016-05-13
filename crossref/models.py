@@ -2,11 +2,14 @@
 """
 """
 
+from collections import defaultdict
 from datetime import datetime
 
 from . import utils
 td = utils.get_truncated_display_string
 cld = utils.get_list_class_display
+
+#keys are based on ids
 
 
 class ResponseObject(object):
@@ -58,6 +61,13 @@ class TypesList(ResponseObject):
     def __init__(self,json,api):
         super(TypesList, self).__init__(json)    
         self.docs = [Type(x,api) for x in self.json]
+        self.all_ids = [x['id'] for x in self.json]
+        
+    def __repr__(self):
+        pv = ['docs',cld(self.docs),
+              'all_ids',td(self.all_ids)]
+
+        return utils.property_values_to_string(pv)      
 
 class Type(ResponseObject):
     """
@@ -97,19 +107,32 @@ class WorkList(ResponseObject):
         super(WorkList, self).__init__(json)
         
         self.api = api  
-        self.docs = [Work(utils.clean_dict_keys(x),api) for x in self.json]
+        self.docs = [_create_work(utils.clean_dict_keys(x),api) for x in self.json]
         
-        #TODO: We might want to break up by type
-        all_keys_list = [set(x.keys()) for x in self.json]
-        all_unique_keys = sorted(set.union(*all_keys_list))
-        all_types = [x.get('type') for x in self.json]
-        #import pdb
-        #pdb.set_trace()
-        #self.all_keys = set([])
+        types = [x['type'] for x in self.json]
+        
+        docs_by_type = defaultdict(list)
+
+        for x in self.json:
+            cur_type = x['type']
+            docs_by_type[cur_type].append(x)
+
+        type_fields = {}
+
+        for key in docs_by_type:
+            docs = docs_by_type[key]
+            all_keys_list = [set(x.keys()) for x in docs]
+            all_unique_fields = sorted(set.union(*all_keys_list))
+            type_fields[key] = all_unique_fields
+        
+        self.docs_by_type = docs_by_type
+        self.type_fields = type_fields
+        self.unique_types = set(types)        
         
     def __repr__(self):
         pv = ['api',cld(self.api),
-                'docs',cld(self.docs)]
+                'docs',cld(self.docs),
+                'unique_types',self.unique_types]
 
         return utils.property_values_to_string(pv)        
 
@@ -164,8 +187,98 @@ class Work(ResponseObject):
     """    
     
     def __init__(self,json,api):
+        self.api = api
         super(Work, self).__init__(json)
         
+    def get_prefix_info(self):
+        pass        
+    
+        
+
+
+class PrefixList(ResponseObject):
+
+    def __init__(self,json,api):
+        super(Work, self).__init__(json)
+        self.docs = [Prefix(utils.clean_dict_keys(x),api) for x in self.json]
+
+    def __repr__(self):
+        pv = ['docs',cld(self.docs)]
+
+        return utils.property_values_to_string(pv)  
+
+class Prefix(ResponseObject):
+
+    def __init__(self,json,api):
+        super(Work, self).__init__(json)
+        
+
+#------------------------------------------------------------------------
+class BookSection(Work):
+    
+    def __init__(self,json,api):
+        super(BookSection, self).__init__(json,api)    
+
+class Monograph(Work):
+    
+    def __init__(self,json,api):
+        super(Monograph, self).__init__(json,api)     
+
+class Report(Work):
+    
+    def __init__(self,json,api):
+        super(Report, self).__init__(json,api)  
+        
+class BookTrack(Work):
+    
+    def __init__(self,json,api):
+        super(BookTrack, self).__init__(json,api)  
+
+class JournalArticle(Work):
+    
+    def __init__(self,json,api):
+        super(JournalArticle, self).__init__(json,api)  
+
+class BookPart(Work):
+    
+    def __init__(self,json,api):
+        super(BookPart, self).__init__(json,api)  
+
+class Other(Work):
+    
+    def __init__(self,json,api):
+        super(Other, self).__init__(json,api)  
+
+class Book(Work):
+    
+    def __init__(self,json,api):
+        super(Book, self).__init__(json,api)  
+
+class JournalVolume(Work):
+    
+    def __init__(self,json,api):
+        super(JournalVolume, self).__init__(json,api)  
+        
+class BookSet(Work):
+    
+    def __init__(self,json,api):
+        super(BookSet, self).__init__(json,api)  
+        
+class ReferencyEntry(Work):
+    
+    def __init__(self,json,api):
+        super(ReferencyEntry, self).__init__(json,api)  
+        
+class ProceedingsArticle(Work):
+    
+    def __init__(self,json,api):
+        super(ProceedingsArticle, self).__init__(json,api)  
+
+class UnhandledWork(Work):
+
+    def __init__(self,json,api):
+        super(UnhandledWork, self).__init__(json,api)   
+    
     def _null(self):
         #This will change, need to expand work by types
         self.DOI = None
@@ -229,6 +342,25 @@ class Work(ResponseObject):
                 'indexed',self.indexed]
 
         return utils.property_values_to_string(pv)
+
+#List is based on id, not label
+type_objects = {
+    'book-section':BookSection,
+    'monograph':Monograph,
+    'report':Report,
+    'book-track':BookTrack,
+    'journal-article':JournalArticle,
+    'book-part':BookPart,
+    'other':Other}
+
+def _create_work(json,api):
+    
+    work_type = json['type']
+    if work_type in type_objects:
+        fh = type_objects[work_type]
+        return fh(json,api)
+    else:
+        return UnhandledWork(json,api)        
             
 def _l2d(input_list):
     #property-value pairs to dictionary

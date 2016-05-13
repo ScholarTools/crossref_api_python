@@ -114,7 +114,9 @@ class QueryOptions(object):
         TODO: Add documentation on how to use
         e.g.
             'renear+-ontologies' #renear but not ontologies
-    rows :
+    rows : int
+        Number of results per page
+        #TODO might rename
     offset :
     sample :
         If specified, this return N random results. This can be useful 
@@ -213,7 +215,7 @@ class API(object):
         
         self.session = requests.Session()
      
-    def _make_get_request(self,url,object_fh, params, response_params=None,is_list=False):
+    def _make_get_request(self,url,object_fh, params=None, response_params=None,is_list=False):
     
         if params is None:
             params = {}
@@ -273,6 +275,10 @@ class API(object):
         c = api.API()
         m = c.doi_meta('10.1109/TNSRE.2011.2163145')
         
+        TODO : are there any valid kwargs? I don't think there are. This
+        can probably be removed (oops, maybe version?)
+        
+        
         """
         
         doi = _clean_doi(doi)
@@ -286,6 +292,21 @@ class API(object):
         #url = self.BASE_URL + 'works'
         
         pass
+    
+    def prefix(self,prefix_id):
+        """
+        Returns metadata for the DOI owner prefix
+        """
+        url = self.BASE_URL + 'prefixes/' + prefix_id
+        
+        return self._make_get_request(url,models.Prefix)
+    
+    #This apparently doesn't exist
+    #-----------------------------------------------------
+    #def prefixes(self,options=None,_filter=None):
+    #    
+    #    url = self.BASE_URL + 'prefixes'
+    #    return self._make_list_request(url,models.WorkList,options,_filter)
     
     def _types_list(self):
         

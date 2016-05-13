@@ -22,6 +22,8 @@ print(q)
 
 m = c.doi_list(options=q)
 
+prefix_list = c.prefixes(options=q)
+
 import pdb
 pdb.set_trace()
 
