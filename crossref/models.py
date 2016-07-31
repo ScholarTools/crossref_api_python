@@ -18,7 +18,9 @@ class ResponseObject(object):
     #if they wanted. For example, this would allow the user to return authors
     #as just the raw json (from a document) rather than creating a list of 
     #Persons
-    object_fields = {}    
+    object_fields = {}
+    
+    renamed_fields = {}
     
     def __init__(self,json):
         self.json = json
@@ -30,12 +32,27 @@ class ResponseObject(object):
         #
         #This however still keeps in place errors like if you ask for:
         #document.yeear <= instead of year
+        
+        #TODO: I did some quick copy_paste, this may need to change ...
+
+        #TODO: new_name is a poor variable name, it really represents
+        #the name of the entry in the json dict
         d = self.fields()
+
+        if name in d:
+            new_name = name
+        elif name in self.renamed_fields:
+            new_name = name #Do we want to do object lookup on the new name?
+            name = self.renamed_fields[name]
+        else:
+            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
+        
         if name in d:
             fh = d[name]
             if fh is None:
-                value = self.json.get(name)
+                value = self.json.get(new_name)
             else:
+                #We will let the function handle work with the input name
                 value = fh(self,name)
             return value
         else:
@@ -93,7 +110,67 @@ class Type(ResponseObject):
         pv = ['label',self.label,
                 'id',self.id]
         return utils.property_values_to_string(pv)
+  
+class JournalList(ResponseObject):
+    
+    def __init__(self,json,api):
+        super(JournalList, self).__init__(json)
         
+        self.api = api
+        self.journals = [Journal(x,api) for x in self.json]
+        
+
+class Journal(ResponseObject):
+
+    """
+    Attributes
+    ----------
+    breakdowns :
+        Ex. {'dois-by-issued-year': [[2014, 24], [2015, 20], [2016, 7]]}
+        
+    counts :
+        Ex. {'backfile-dois': 12, 'total-dois': 51, 'current-dois': 39}
+    coverage :
+        Ex. {'update-policies-backfile': 0.0, 'funders-current': 0.0, 'award-numbers-current': 0.0, 'orcids-current': 0.0 ...
+    flags:
+        Ex. {'deposits-award-numbers-current': False, 'deposits-award-numbers-backfile': False, ...
+        
+    """
+    
+    
+    def __init__(self,json,api):
+        super(Journal, self).__init__(json)
+
+
+    @classmethod
+    def fields(cls):
+        #TODO: this is not done, will also need to split by type
+        return _l2d([
+        'breakdowns', None, 
+        'last_status_check_time',None,
+        'counts', None, 
+        'ISSN', None,
+        'publisher',None,
+        'coverage',None,
+        'title',None,
+        'flags',None])
+        
+    def __repr__(self):
+        pv = ['breakdowns',td(self.breakdowns),
+                'last_status_check_time',self.last_status_check_time,
+                'counts',td(self.counts),
+                'ISSN',self.ISSN,
+                'publisher',self.publisher,
+                'coverage',td(self.coverage),
+                'title',self.title,
+                'flags',td(self.flags)]
+
+        return utils.property_values_to_string(pv)        
+        #'all_titles',lambda x,y: _get_alternate_field(x,'title'), #This is an example, we might not really use it
+
+
+
+      
 class WorkList(ResponseObject):
     
     """
@@ -130,9 +207,10 @@ class WorkList(ResponseObject):
         self.unique_types = set(types)        
         
     def __repr__(self):
-        pv = ['api',cld(self.api),
-                'docs',cld(self.docs),
-                'unique_types',self.unique_types]
+        pv = [
+            'api',cld(self.api),
+             'docs',cld(self.docs),
+            'unique_types',self.unique_types]
 
         return utils.property_values_to_string(pv)        
 

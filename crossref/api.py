@@ -5,12 +5,61 @@ https://github.com/CrossRef/rest-api-doc/blob/master/rest_api.md
 """
 
 """
-/works	returns a list of all works (journal articles, conference proceedings, books, components, etc), 20 per page
-/funders	returns a list of all funders in the FundRef Registry
-/members	returns a list of all CrossRef members (mostly publishers)
-/types	returns a list of valid work types
-/licenses	return a list of licenses applied to works in CrossRef metadata
-/journals	return a list of journals in the CrossRef database
+7/30/2016
+Status:
+1) Lots of end points are not implemented
+2) Filter is not implemented
+3) Queries on works not implemented
+4) Works should probably be refactored
+    - own class
+    - retrieve new options and filter from the class
+5) Works models are not completely implemented
+6) Clean up work response model, why are we cleaning dict keys?????
+
+
+End Points
+----------
+  ** /works :    API.search_works
+
+Returns a list of works (journal articles, conference proceedings, 
+books, components, etc) that matches the given search.
+
+
+  ** /funders : NYI	
+
+Returns a list of all funders in the FundRef Registry
+
+
+  ** /members : NYI	
+   
+Returns a list of all CrossRef members (mostly publishers)
+
+
+  ** /types	: API.work_types
+
+Returns a list of valid work types
+
+
+  ** /licenses : NYI	
+
+Return a list of licenses applied to works in CrossRef metadata
+
+
+    /journals	
+
+Return a list of journals in the CrossRef database
+
+
+
+/works/{doi}
+
+Return information for a particular DOI
+
+
+
+/works	returns a list of all works , 20 per page
+
+
 
 /works/{doi}	returns metadata for the specified CrossRef DOI.
 /funders/{funder_id}	returns metadata for specified funder and its suborganizations
@@ -209,11 +258,23 @@ sort={#}	sort results by a certain field
 
 class API(object):
     
-    BASE_URL = 'http://api.crossref.org/'    
+    BASE_URL = 'http://api.crossref.org/'
+    
+    """
+    Attributes
+    ----------
+    session : requests.Session
+    last_url :
+    last_response :
+    last_params :
+    work_types
+    
+    """
     
     def __init__(self):
         
         self.session = requests.Session()
+        self._work_types = None
      
     def _make_get_request(self,url,object_fh, params=None, response_params=None,is_list=False):
     
@@ -226,10 +287,15 @@ class API(object):
                 params = dict((k, v) for k, v in params.items() if v)
      
         r = self.session.get(url,params=params)      
-        
+
         self.last_url = url
         self.last_response = r     
         self.last_params = params     
+        
+        if r.status_code == 404:
+            #This typically happens when the DOI is invalid
+            #TODO: Make this a named exception
+            raise Exception(r.text)
         
         j = r.json()
         if j['status'] == 'failed':
@@ -249,30 +315,84 @@ class API(object):
             return object_fh(object_json,self,response_params)
     
     def _make_list_request(self,url,object_fh,options,_filter):
+
+        """
+        Parameters
+        ----------
+        url :
+        object_fh : Function handle to result object
+        options : 
+        _filter :
+        TODO: We could also allow options to be a dict rather than forcing the object creation
+        """
+        
+        #TODO: Consider renaming to _make_search_request
+        
         if options is not None:
             qd = options.get_query_dict()
         else:
             qd = {}
                
+        #TODO: We could make a post request instead, this might be preferable
         return self._make_get_request(url,object_fh,qd,is_list=True)
     
-    def doi_list(self,options=None,_filter=None):
+    def search_licenses(self,options=None,_filter=None):
+        pass
+    
+    def search_journals(self,options=None,_filter=None):
+        
+        url = self.BASE_URL + 'journals'
+        return self._make_list_request(url,models.JournalList,options,_filter)
+    
+    def search_works(self,options=None,_filter=None):
         """
+        
+        Parameters
+        ----------
+        options : QueryOptions
+        _filter : Filter
+
+        Returns
+        -------
+        crossref.models.WorkList
+
         Invalid options
         ---------------
         sample
+        
+        TODO: Do we get a 'next' link?
+        TODO: Make sure the model methods show in the display ...
         """
         
         url = self.BASE_URL + 'works'
         return self._make_list_request(url,models.WorkList,options,_filter)
         
+    def search_works_by_funder(self):
+        pass
+    
+    def search_works_by_type(self):
+        pass
+    
+    def search_works_by_owner(self):
+        pass
+    
+    def search_works_by_member(self):
+        pass
+    
+    def search_works_by_journal(self):
+        pass
+
     def doi_meta(self,doi,**kwargs):
         """
         
+        Returns
+        -------
+        crossref.models.Work        
+        
         Example
         -------
-        from crossref import api
-        c = api.API()
+        import crossref
+        c = crossref.API()
         m = c.doi_meta('10.1109/TNSRE.2011.2163145')
         
         TODO : are there any valid kwargs? I don't think there are. This
@@ -301,17 +421,16 @@ class API(object):
         
         return self._make_get_request(url,models.Prefix)
     
-    #This apparently doesn't exist
-    #-----------------------------------------------------
-    #def prefixes(self,options=None,_filter=None):
-    #    
-    #    url = self.BASE_URL + 'prefixes'
-    #    return self._make_list_request(url,models.WorkList,options,_filter)
-    
-    def _types_list(self):
+    @property
+    def work_types(self):
+        if self._work_types is None:
+            url = self.BASE_URL + 'types'
+            self._work_types = self._make_list_request(url,models.TypesList,None,None)
+
+        return self._work_types
         
-        url = self.BASE_URL + 'types'
-        return self._make_list_request(url,models.TypesList,None,None)
+        
+        
     
 class ResponseMessageInfo(object):
 
