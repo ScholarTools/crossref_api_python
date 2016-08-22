@@ -16,8 +16,9 @@ import requests
 
 from .errors import InvalidDOI, UnhandledHTTPResonseFailure
 
-#TODO: How do we want to support session state? Pass it in and make
-#a generic shared method 
+# TODO: How do we want to support session state? Pass it in and make
+# a generic shared method
+
 
 def is_valid(doi):
     try:
@@ -26,10 +27,12 @@ def is_valid(doi):
     except InvalidDOI:
         return False
 
+
 def follow_doi(doi):
-    #TODO: I've seen this fail when the page includes a javascript redirect
-    #call get_doi_link then follow the call allowing redirects until it stops
+    # TODO: I've seen this fail when the page includes a javascript redirect
+    # call get_doi_link then follow the call allowing redirects until it stops
     pass
+
 
 def get_doi_link(doi):
     
@@ -52,9 +55,9 @@ def get_doi_link(doi):
     
     doi_link = r.headers['Location']
     
-    #Often times this link is to a local server which then gets the item:
+    # Often times this link is to a local server which then gets the item:
     #
-    #e.g.
+    # e.g.
     # http://dx.doi.org/10.1002/nau.1930090206  points to (303)
     # http://doi.wiley.com/10.1002/nau.1930090206 points to (302)
     # http://onlinelibrary.wiley.com/resolve/doi?DOI=10.1002/nau.1930090206
@@ -100,10 +103,9 @@ def clean_doi(doi,_format='value'):
         return 'http://dx.doi.org/' + value    
     else:
         raise Exception('Unhandled format for DOI cleaning')
-    
 
 
-#This could be shared by anything above that may or may not have a session
-#passed in
+# This could be shared by anything above that may or may not have a session
+# passed in
 def _make_request():
     pass
