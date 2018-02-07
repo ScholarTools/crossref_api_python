@@ -36,6 +36,14 @@ doi = 'https://dx.doi.org/10.1002/nau.1930090206'
 cleaned_doi = cdoi.clean_doi(doi,_format='value')
 print('Cleaned doi to value is: %s' % cleaned_doi)
 
+doi = 'http://doi.org/10.1002/nau.1930090206'
+cleaned_doi = cdoi.clean_doi(doi,_format='http')
+print('Cleaned doi to value is: %s' % cleaned_doi)
+
+doi = 'https://doi.org/10.1002/nau.1930090206'
+cleaned_doi = cdoi.clean_doi(doi,_format='https')
+print('Cleaned doi to value is: %s' % cleaned_doi)
+
 doi = '10.1002/nau.1930090206'
 cleaned_doi = cdoi.clean_doi(doi,_format='value')
 print('Cleaned doi to value is: %s' % cleaned_doi)
