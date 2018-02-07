@@ -99,7 +99,7 @@ def clean_doi(doi,_format='value'):
         return 'doi:' + value
     elif _format == 'http':
         return 'https://doi.org/' + value
-    elif _format == 'http':
+    elif _format == 'https':
         return 'https://doi.org/' + value    
     else:
         raise Exception('Unhandled format for DOI cleaning')
