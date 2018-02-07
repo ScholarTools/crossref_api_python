@@ -10,7 +10,7 @@ doi = '10.1111/cheese'
 doi_valid_status = cdoi.is_valid(doi)
 print('DOI valid status: %s' % doi_valid_status)
 
-#Gettng the DOI link
+#Getting the DOI link
 #----------------------------------------------------
 #TODO: Should verify that this throws the expected error
 #doi = '10.1111/cheese'
