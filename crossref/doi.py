@@ -81,6 +81,8 @@ def clean_doi(doi,_format='value'):
     if doi.startswith('10.'):
         #TODO: do other registries exist? 100.?
         value = doi
+    elif doi.startswith('https://doi.org/'):
+        return doi
     else:
         lower_doi = doi.lower()
         if lower_doi.startswith('doi:'):
@@ -90,6 +92,8 @@ def clean_doi(doi,_format='value'):
             value = doi[18:]
         elif lower_doi.startswith('https://dx.doi.org/'):
             value = doi[19:]
+        elif lower_doi.startswith('http://doi.org/'):
+            value = doi[15:]
         else:
             raise Exception('Form of DOI is unrecognized, value = %s' % doi)
         
