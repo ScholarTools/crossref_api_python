@@ -92,7 +92,7 @@ def clean_doi(doi,_format='value'):
             value = doi[19:]
         elif lower_doi.startswith('http://doi.org/'):
             value = doi[15:]
-        elif lower_doi.startswith('httpw://doi.org/'):
+        elif lower_doi.startswith('https://doi.org/'):
             value = doi[16:]
         else:
             raise Exception('Form of DOI is unrecognized, value = %s' % doi)
