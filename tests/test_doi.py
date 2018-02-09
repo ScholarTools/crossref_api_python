@@ -10,7 +10,7 @@ doi = '10.1111/cheese'
 doi_valid_status = cdoi.is_valid(doi)
 print('DOI valid status: %s' % doi_valid_status)
 
-#Gettng the DOI link
+#Getting the DOI link
 #----------------------------------------------------
 #TODO: Should verify that this throws the expected error
 #doi = '10.1111/cheese'
@@ -34,6 +34,14 @@ print('Cleaned doi to value is: %s' % cleaned_doi)
 
 doi = 'https://dx.doi.org/10.1002/nau.1930090206'
 cleaned_doi = cdoi.clean_doi(doi,_format='value')
+print('Cleaned doi to value is: %s' % cleaned_doi)
+
+doi = 'http://doi.org/10.1002/nau.1930090206'
+cleaned_doi = cdoi.clean_doi(doi,_format='http')
+print('Cleaned doi to value is: %s' % cleaned_doi)
+
+doi = 'https://doi.org/10.1002/nau.1930090206'
+cleaned_doi = cdoi.clean_doi(doi,_format='https')
 print('Cleaned doi to value is: %s' % cleaned_doi)
 
 doi = '10.1002/nau.1930090206'
