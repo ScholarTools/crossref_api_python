@@ -478,9 +478,9 @@ class API(object):
         url = self.BASE_URL + 'members/' + member_id
         return self._make_get_request(url,models.Member)
     
-    def member_list(self):
+    def members(self):
         url = self.BASE_URL + 'members/'
-        return self._make_get_request(url,models.MemberList)
+        return self._make_get_request(url,models.MembersSearchResult)
     
     def work_types(self):
         if self._work_types is None:

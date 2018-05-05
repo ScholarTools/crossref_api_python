@@ -55,7 +55,7 @@ temp = api.doi_list(options=options)
 
 #---- /members
 #===========================================
-temp = api.member_list()
+temp = api.members()
 
 #---- /types
 #===========================================

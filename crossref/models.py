@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 """
-
+#Std Lib Imports
+#--------------------------
+#import itertools
 from collections import defaultdict
-from datetime import datetime
+#from datetime import datetime
 
+#Local imports
+#--------------------------
 from . import utils
 display_class = utils.display_class
 td = utils.get_truncated_display_string
@@ -18,6 +22,33 @@ pv = utils.property_values_to_string
 def pass_through(data,api):
     return data
 
+#https://stackoverflow.com/questions/16380575/python-decorating-property-setter-with-list
+
+class ExtendedList(list):
+
+    #This class dynamically creates a class instance when accessing a
+    #member of the list
+    
+    #This needs to be defined as a function handle for the sub class
+    item_class = None
+    
+    def __init__(self, data, api):
+        self.api = api
+        self.data = data
+
+    def __len__(self):
+        return len(self.data)
+
+    def __iter__(self):
+        return iter(self.data)
+
+    def __getitem__(self, index):
+        #Convery index to class
+        #[Member(utils.clean_dict_keys(x),api) for x in self.json]
+        return self.item_class(self.data[index],self.api)
+    
+
+
 class ResponseObject(object):
     
     #I made this a property so that the user could change this processing
@@ -30,26 +61,22 @@ class ResponseObject(object):
     
     renamed_fields = {}
     
+    other_fields_for_display = []
+        
     def __init__(self,json):
         self.json = json
         
     def __getattr__(self, name):
         
-        #This check allows an optional field to be returned as None
-        #even if it isn't in the current json definition
-        #
-        #This however still keeps in place errors like if you ask for:
-        #document.yeear <= instead of year
-        
-        #TODO: new_name is a poor variable name, it really represents
-        #the name of the entry in the json dict
-        d = self.fields()
-
-        if name in d:
+        #TODO: At some point I think we had optional field support and this
+        #has since been removed - right now we only allow:
+        #1) keys from json
+        #2) keys in renamed_fields
+        if name in json.keys():
             pass
-            #new_name = name
         elif name in self.renamed_fields:
-            #new_name = name #Do we want to do object lookup on the new name?
+            #What this acomplishes is that it let's us ask for
+            #my_cool_variable which then internally accesses my_variable
             name = self.renamed_fields[name]
         else:
             raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
@@ -72,7 +99,7 @@ class ResponseObject(object):
         
     @classmethod
     def __dir__(cls):
-        d = set(dir(cls) + cls.fields().keys())
+        d = set(list(dir(cls)) + cls.fields())
         d.remove('fields')
         d.remove('object_fields')
 
@@ -82,15 +109,18 @@ class ResponseObject(object):
         """
         This should be overloaded by the subclass.
         """
-        return self.json.keys()
+        return list(self.json.keys()) + self.other_fields_for_display
     
     def __repr__(self):
         temp = []
-        for key in self.fields():
+        for key in self.json.keys():
             #TODO: This doesn't support non_json fields and it doesn't respect
             #any object transformation that might occur
             disp_str = _short_string(self.json[key])
             temp.extend([key,disp_str])
+        for key in self.other_fields_for_display:
+            value = self.__dict__[key]
+            temp.extend([key,value])
         return display_class(self,temp)
     
 def _short_string(value):
@@ -328,17 +358,29 @@ class Prefix(ResponseObject):
     def get_member_info(self):
         #TODO: Implement this
         pass
+
+#---- Members
+#==========================================
+class MembersSearchResult(ResponseObject):
     
-class MemberList(ResponseObject):
+    other_fields_for_display = ['api','citems']
     
     def __init__(self,json,api):
         self.api = api
-        super(MemberList, self).__init__(json)
+        super(MembersSearchResult, self).__init__(json)
+        self.citems = MembersList(json['items'],api)
+        
+    
+
+        
+        
+        #self.api = api
+        #super(MemberList, self).__init__(json)
         #self.docs = [Member(utils.clean_dict_keys(x),api) for x in self.json]
 
     
-    def item_as_class(self,index):
-        return Member(self.json['items'][index],self.api)
+    #def item_as_class(self,index):
+    #    return Member(self.json['items'][index],self.api)
     
     #TODO: Can we add converted documents
     #=> Let's just show the methods
@@ -384,14 +426,24 @@ class Member(ResponseObject):
                         => indicates deposit behavior
                   location: 111 River Street Hoboken NJ 07...
                      names: <list> len 33
-                        => journals?
+                        => contains list of journals?
     
     """
 
     def __init__(self,json,api):
-        super(Member, self).__init__(json)        
+        super(Member, self).__init__(json)       
         
+        #Any other methods
+        #=> get prefix info
+ 
+class MembersList(ExtendedList):
+    
+    item_class = Member
+    
+    def __init__(self,json,api):
+        super(MembersList, self).__init__(json,api)       
 
+#----  Work Types
 #------------------------------------------------------------------------
 class BookSection(Work):
     
