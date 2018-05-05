@@ -2,6 +2,9 @@
 """
 """
 
+class RequestError(Exception):
+    pass
+
 class InvalidDOI(Exception):
     pass
 

@@ -51,9 +51,8 @@ Return a list of journals in the CrossRef database
 
 
 
-/works/{doi}
-
-Return information for a particular DOI
+/works/{doi}   :API.doi_meta
+        Returns metadata for the specified CrossRef DOI
 
 
 
@@ -61,7 +60,6 @@ Return information for a particular DOI
 
 
 
-/works/{doi}	returns metadata for the specified CrossRef DOI.
 /funders/{funder_id}	returns metadata for specified funder and its suborganizations
 /prefixes/{owner_prefix}	returns metadata for the DOI owner prefix
 /members/{member_id}	returns metadata for a CrossRef member
@@ -87,6 +85,7 @@ resource	description
 
 
 import requests
+from . import errors
 from . import models
 from . import utils
 from .utils import get_truncated_display_string as td
@@ -155,6 +154,7 @@ article-number		metadata for records with a given article number
 
 class QueryOptions(object):
     """
+    https://github.com/CrossRef/rest-api-doc#parameters
     
     Attributes
     ----------
@@ -165,7 +165,7 @@ class QueryOptions(object):
             'renear+-ontologies' #renear but not ontologies
     rows : int
         Number of results per page
-        #TODO might rename
+        #TODO might rename or alias
     offset :
     sample :
         If specified, this return N random results. This can be useful 
@@ -258,7 +258,7 @@ sort={#}	sort results by a certain field
 
 class API(object):
     
-    BASE_URL = 'http://api.crossref.org/'
+    BASE_URL = 'https://api.crossref.org/'
     
     """
     Attributes
@@ -271,8 +271,9 @@ class API(object):
     
     """
     
-    def __init__(self):
+    def __init__(self,debug=False):
         
+        self.debug = debug
         self.session = requests.Session()
         self._work_types = None
      
@@ -295,7 +296,7 @@ class API(object):
         if r.status_code == 404:
             #This typically happens when the DOI is invalid
             #TODO: Make this a named exception
-            raise Exception(r.text)
+            raise errors.RequestError(r.text)
         
         j = r.json()
         if j['status'] == 'failed':
@@ -381,19 +382,25 @@ class API(object):
     
     def search_works_by_journal(self):
         pass
+    
+    def doi_list(self,options):
+        pass
 
     def doi_meta(self,doi,**kwargs):
         """
         
         Returns
         -------
-        crossref.models.Work        
+        crossref.models.Work       
+        
+        If the DOI is not found the errors.InvalidDOI exception is raised.
         
         Example
         -------
         import crossref
         c = crossref.API()
         m = c.doi_meta('10.1109/TNSRE.2011.2163145')
+        
         
         TODO : are there any valid kwargs? I don't think there are. This
         can probably be removed (oops, maybe version?)
@@ -405,7 +412,18 @@ class API(object):
         
         url = self.BASE_URL + 'works/' + doi
         
-        return self._make_get_request(url,models.Work,kwargs)
+        try:
+            return self._make_get_request(url,models.Work)
+        except errors.RequestError:
+            #TODO: Check for 404
+            #last_response.status_code
+            #TODO: Do this only if debugging is enabled
+            if self.debug:
+                #TODO: Also report code
+                print("Error msg from server: " + self.last_response.text)
+            raise errors.InvalidDOI('Invalid DOI requested: ' + doi)
+        
+        #return self._make_get_request(url,models.Work,kwargs)
         
     def funders_list(self,options=None,_filter=None):
 
@@ -413,22 +431,77 @@ class API(object):
         
         pass
     
-    def prefix(self,prefix_id):
+    def prefix_info(self,prefix_id):
         """
         Returns metadata for the DOI owner prefix
+        
+        Returns
+        -------
+        crossref.models.Prefix
+        
+        Implements
+        ----------
+        /prefixes/{owner_prefix}
+        
+        Example Data
+        ------------
+        <class 'crossref.models.Prefix'>:
+            member: http://id.crossref.org/member/311
+              name: Wiley-Blackwell
+            prefix: http://id.crossref.org/prefix/10.1002
         """
+        
         url = self.BASE_URL + 'prefixes/' + prefix_id
         
         return self._make_get_request(url,models.Prefix)
     
-    @property
+    def member_info(self,member_id):
+        """
+        
+        Example Data
+        ------------
+        <class 'crossref.models.Member'>:
+    last_status_check_time: 1522803773023
+              primary_name: Wiley-Blackwell
+                    counts: <dict> with 3 fields
+                breakdowns: <dict> with 1 fields
+                  prefixes: <list> len 33
+                  coverage: <dict> with 18 fields
+                    prefix: <list> len 33
+                        id: 311
+                    tokens: ['wiley', 'blackwell']
+                     flags: <dict> with 20 fields
+                  location: 111 River Street Hoboken NJ 07...
+                     names: <list> len 33
+        """
+        
+        url = self.BASE_URL + 'members/' + member_id
+        return self._make_get_request(url,models.Member)
+    
+    def member_list(self):
+        url = self.BASE_URL + 'members/'
+        return self._make_get_request(url,models.MemberList)
+    
     def work_types(self):
         if self._work_types is None:
             url = self.BASE_URL + 'types'
             self._work_types = self._make_list_request(url,models.TypesList,None,None)
 
         return self._work_types
+    
+    def work_type_info(self,type_id):
+        """
+        This doesn't seem to be all that useful, since it just returns
+        the subset of work_types()
         
+        Example
+        -------
+        api.work_type_info('journal')
+        e.g. {'id': 'journal', 'label': 'Journal'}
+        """
+        url = self.BASE_URL + 'types/' + type_id
+        return self._make_get_request(url,models.pass_through)
+
         
         
     

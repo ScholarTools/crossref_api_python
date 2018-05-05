@@ -3,13 +3,18 @@
 #TODO: break out display utils to another module
 """
 
+def display_class(class_instance,pv):
+    
+    #Do we want to to specify the full path to the class ...?
+    return '%s:\n' % type(class_instance) + property_values_to_string(pv,extra_indentation=4)
+
 def float_or_none_to_string(x):
     if x is None:
         return 'None'
     else:
         return '%0.2f'%x
 
-def property_values_to_string(pv):
+def property_values_to_string(pv,extra_indentation = 0):
     """
     Parameters
     ----------
@@ -17,20 +22,20 @@ def property_values_to_string(pv):
         Keys are properties, values are values
     """
 
-    #Max length    
-    
+    # Max length
+
     keys = pv[::2]
     values = pv[1::2]
-    
+
     key_lengths = [len(x) for x in keys]
-    max_key_length = max(key_lengths)
+    max_key_length = max(key_lengths) + extra_indentation
     space_padding = [max_key_length - x for x in key_lengths]
-    key_display_strings = [' '*x + y for x,y in zip(space_padding,keys)]
-    
+    key_display_strings = [' ' * x + y for x, y in zip(space_padding, keys)]
+
     str = u''
-    for (key,value) in zip(key_display_strings,values):
-        str += '%s: %s\n' % (key,value)
-        
+    for (key, value) in zip(key_display_strings, values):
+        str += '%s: %s\n' % (key, value)
+
     return str
 
 def get_list_class_display(value):
@@ -116,4 +121,4 @@ def assign_json(json_data, field_name, optional=True, default=None):
         raise Exception("TODO: Fix me")
         
 def clean_dict_keys(d):
-    return { x.replace('-', '_'): d[x] for x in d.keys() }
+    return {x.replace('-', '_'): d[x] for x in d.keys()}

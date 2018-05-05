@@ -6,11 +6,17 @@ from collections import defaultdict
 from datetime import datetime
 
 from . import utils
+display_class = utils.display_class
 td = utils.get_truncated_display_string
 cld = utils.get_list_class_display
+pv = utils.property_values_to_string
 
 #keys are based on ids
 
+
+#----- Generic 
+def pass_through(data,api):
+    return data
 
 class ResponseObject(object):
     
@@ -18,6 +24,8 @@ class ResponseObject(object):
     #if they wanted. For example, this would allow the user to return authors
     #as just the raw json (from a document) rather than creating a list of 
     #Persons
+    #
+    #Object fields must have function handles that accept self and the field name
     object_fields = {}
     
     renamed_fields = {}
@@ -33,31 +41,35 @@ class ResponseObject(object):
         #This however still keeps in place errors like if you ask for:
         #document.yeear <= instead of year
         
-        #TODO: I did some quick copy_paste, this may need to change ...
-
         #TODO: new_name is a poor variable name, it really represents
         #the name of the entry in the json dict
         d = self.fields()
 
         if name in d:
-            new_name = name
+            pass
+            #new_name = name
         elif name in self.renamed_fields:
-            new_name = name #Do we want to do object lookup on the new name?
+            #new_name = name #Do we want to do object lookup on the new name?
             name = self.renamed_fields[name]
         else:
             raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
         
-        if name in d:
-            fh = d[name]
-            if fh is None:
-                value = self.json.get(new_name)
-            else:
-                #We will let the function handle work with the input name
-                value = fh(self,name)
-            return value
+        value = self.json.get(name)
+        
+        if value is None:
+           return None
+        elif name in self.object_fields:
+            #Here we return the value after passing it to a method
+            #fh => function handle
+            #
+            #Only the value is explicitly passed in
+            #Any other information needs to be explicitly bound
+            #to the method
+            method_fh = self.object_fields[name]
+            return method_fh(self,name)
         else:
-            raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
-
+            return value
+        
     @classmethod
     def __dir__(cls):
         d = set(dir(cls) + cls.fields().keys())
@@ -66,50 +78,88 @@ class ResponseObject(object):
 
         return sorted(d)
 
-    @classmethod
-    def fields(cls):
+    def fields(self):
         """
         This should be overloaded by the subclass.
         """
-        return []
+        return self.json.keys()
+    
+    def __repr__(self):
+        temp = []
+        for key in self.fields():
+            #TODO: This doesn't support non_json fields and it doesn't respect
+            #any object transformation that might occur
+            disp_str = _short_string(self.json[key])
+            temp.extend([key,disp_str])
+        return display_class(self,temp)
+    
+def _short_string(value):
+    MAX_LENGTH = 30 #default was a bit long for td
+    disp_string = str(value)
+    if len(disp_string) < MAX_LENGTH:
+        return disp_string
+    
+    if type(value) is dict:
+        return '<dict> with %d fields' % len(value.keys())
+    elif type(value) is list:
+        #TODO: If length 1 just print the truncated list
+        return '<list> len %d' % len(value)
+    else:
+        s = str(value)
+        return td(s,max_length=MAX_LENGTH)  
 
 class TypesList(ResponseObject):
     
+    """
+    A list of the various types that are supported by CrossRef
+    e.g. journal, book, book-chapter, etc.
+    
+    
+    /types
+    """
+    
     def __init__(self,json,api):
         super(TypesList, self).__init__(json)    
-        self.docs = [Type(x,api) for x in self.json]
-        self.all_ids = [x['id'] for x in self.json]
+        #self.objs = [Type(x,api) for x in self.json]
+        self.raw = json
+        self.ids = [x['id'] for x in self.json]
+        self.labels = [x['label'] for x in self.json]
+        #Not sure how to make this more useful to the end user (if at all)
         
     def __repr__(self):
-        pv = ['docs',cld(self.docs),
-              'all_ids',td(self.all_ids)]
+        pv = ['raw',td(self.raw),
+                'ids',td(self.ids),
+              'labels',td(self.labels)]
 
         return utils.property_values_to_string(pv)      
 
-class Type(ResponseObject):
-    """
-    Attributes
-    ----------
-    label
-    id 
-    """
-    def __init__(self,json,api):
-        super(Type, self).__init__(json)    
-
-    def _null(self):
-        self.label = None
-        self.id = None
-
-    @classmethod
-    def fields(cls):
-        return _l2d([
-        'label', None, 
-        'id',None])
-        
-    def __repr__(self,pv_only=False):
-        pv = ['label',self.label,
-                'id',self.id]
-        return utils.property_values_to_string(pv)
+#class Type(ResponseObject):
+#    """
+#    Created from TypesList
+#    
+#    
+#    Attributes
+#    ----------
+#    label
+#    id 
+#    """
+#    def __init__(self,json,api):
+#        super(Type, self).__init__(json)    
+#
+#    def _null(self):
+#        self.label = None
+#        self.id = None
+#
+#    @classmethod
+#    def fields(cls):
+#        return _l2d([
+#        'label', None, 
+#        'id',None])
+#        
+#    def __repr__(self,pv_only=False):
+#        pv = ['label',self.label,
+#                'id',self.id]
+#        return utils.property_values_to_string(pv)
   
 class JournalList(ResponseObject):
     
@@ -214,43 +264,18 @@ class WorkList(ResponseObject):
 
         return utils.property_values_to_string(pv)        
 
+#---- Works
+
 class Work(ResponseObject):
     
     """
-    Attributes
-    ----------
-    ISSN: list
-        In my first example I saw 2 (print and online?)
-    title: list
-        Why is this a list?
-    URL: string
-    subtitle : ?
-    container-title: None
-    prefix : 
-        ex. http://id.crossref.org/prefix/10.1109
-    type : string
-        known types include: TODO: Update with output of types-list
-        #and add a test for inclusion and exclusion
-        - book-chapter
-        - component
-        - dataset
-        - dissertation
-        - journal-article
-        - journal-issue
-        - monograph
-        - proceedings-article
-    page :
-    subject : list
-        TODO: Where are these coming from? Are these keywords? How are these
-        decideed upon?
-    score :
-        Any values other than 1?
-    member :
-    created :
-        ex. {'date-parts': [[2011, 8, 31]], 'timestamp': 1314805584000, 'date-time': '2011-08-31T15:46:24Z'}
-    volume :
-    published_print :
-    indexed :
+    Documentation!
+    https://github.com/Crossref/rest-api-doc/blob/master/api_format.md#work
+    
+    
+    Relevant Endpoints
+    ------------------
+    /works/{doi}
     
     """
     
@@ -265,6 +290,8 @@ class Work(ResponseObject):
     """    
     
     def __init__(self,json,api):
+        #The api isn't used yet but is meant to allow further calls
+        #in the methods
         self.api = api
         super(Work, self).__init__(json)
         
@@ -272,12 +299,13 @@ class Work(ResponseObject):
         pass        
     
         
-
+#----  Prefix
+#=================================================
 
 class PrefixList(ResponseObject):
 
     def __init__(self,json,api):
-        super(Work, self).__init__(json)
+        super(PrefixList, self).__init__(json)
         self.docs = [Prefix(utils.clean_dict_keys(x),api) for x in self.json]
 
     def __repr__(self):
@@ -286,9 +314,82 @@ class PrefixList(ResponseObject):
         return utils.property_values_to_string(pv)  
 
 class Prefix(ResponseObject):
+    
+    """
+    Relevant Endpoints
+    ------------------
+    /prefixes/{owner_prefix}
+    
+    """
 
     def __init__(self,json,api):
-        super(Work, self).__init__(json)
+        super(Prefix, self).__init__(json)
+        
+    def get_member_info(self):
+        #TODO: Implement this
+        pass
+    
+class MemberList(ResponseObject):
+    
+    def __init__(self,json,api):
+        self.api = api
+        super(MemberList, self).__init__(json)
+        #self.docs = [Member(utils.clean_dict_keys(x),api) for x in self.json]
+
+    
+    def item_as_class(self,index):
+        return Member(self.json['items'][index],self.api)
+    
+    #TODO: Can we add converted documents
+    #=> Let's just show the methods
+    
+    #TODO: 
+    #- iterable
+    #- Next X
+    
+    """
+    #def __repr__(self):
+    #    pv = ['docs',cld(self.docs)]
+    #
+    #    return utils.property_values_to_string(pv) 
+    """
+        
+class Member(ResponseObject):
+    
+    """
+    Documentation??? - I can't find it
+    https://github.com/Crossref/rest-api-doc/blob/master/api_format.md#work
+
+
+    Relevant Endpoints
+    ------------------
+    /members/{member_id}
+    
+    Example Data
+    ------------
+        <class 'crossref.models.Member'>:
+    last_status_check_time: 1522803773023
+              primary_name: Wiley-Blackwell
+                    counts: <dict> with 3 fields
+                breakdowns: <dict> with 1 fields
+                        => # of dois by year
+                  prefixes: <list> len 33
+                  coverage: <dict> with 18 fields
+                        => % of tasks that have been completed
+                            e.g. 'references-current' : 0.729
+                    prefix: <list> len 33
+                        id: 311
+                    tokens: ['wiley', 'blackwell']
+                     flags: <dict> with 20 fields
+                        => indicates deposit behavior
+                  location: 111 River Street Hoboken NJ 07...
+                     names: <list> len 33
+                        => journals?
+    
+    """
+
+    def __init__(self,json,api):
+        super(Member, self).__init__(json)        
         
 
 #------------------------------------------------------------------------
