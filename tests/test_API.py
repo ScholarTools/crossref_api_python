@@ -15,17 +15,17 @@ Other implementations:
     
 Endpoint List
 -----------------------
-/funders - returns a list of all funders in the Funder Registry
-/journals
-/liceneses
-/members
-DONE /types - returns a list of valid work types
+DONE    /funders - returns a list of all funders in the Funder Registry
+DONE    /journals
+DONE    /liceneses - returns a list of all Crossref members (mostly publishers)
+DONE    /members - returns a list of all Crossref members (mostly publishers)
+DONE    /types - returns a list of valid work types
 /works
 
 
 
 
-
+Secondary Endpoint List
 -----------------------
 /types/{type_id}
 
@@ -41,25 +41,42 @@ from crossref import errors
 api = crossref.API(debug=True)
 #========================================
 
+#---- /funders
+#===========================================
+temp = api.funders()
 
 
-#---- /works
-#========================================
-options = crossref.QueryOptions()
-options.sample = 10
-temp = api.doi_list(options=options)
+#---- /journals
+#===========================================
+temp = api.journals()
 
-options = crossref.QueryOptions()
-options.query = "bladder"
-temp = api.doi_list(options=options)
+#---- /licenses
+#===========================================
+temp = api.licenses()
 
 #---- /members
 #===========================================
 temp = api.members()
 
+#TODO: Search filter testing
+
 #---- /types
 #===========================================
 temp = api.work_types()
+
+#---- /works
+#========================================
+options = crossref.QueryOptions()
+options.sample = 10
+temp = api.dois(options=options)
+
+options = crossref.QueryOptions()
+options.query = "bladder"
+temp = api.doi_list(options=options)
+
+
+
+
 
 
 

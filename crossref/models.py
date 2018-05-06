@@ -47,7 +47,14 @@ class ExtendedList(list):
         #[Member(utils.clean_dict_keys(x),api) for x in self.json]
         return self.item_class(self.data[index],self.api)
     
+    def __repr__(self):
+       #return '%s: %d elements%s\n' % (type(self),len(self.data),type(self.item_class))
+       return '%d element list of type %s' %(len(self.data),self.item_class)
 
+
+#TODO: Support getitem
+#=> issn-type
+#=> last-status-check-time
 
 class ResponseObject(object):
     
@@ -64,7 +71,15 @@ class ResponseObject(object):
     other_fields_for_display = []
         
     def __init__(self,json):
+        """
+        Parameters
+        ----------
+        json : dict
+        """
         self.json = json
+        
+    def __getitem__(self, key):
+        return self.json[key]    
         
     def __getattr__(self, name):
         
@@ -72,7 +87,7 @@ class ResponseObject(object):
         #has since been removed - right now we only allow:
         #1) keys from json
         #2) keys in renamed_fields
-        if name in json.keys():
+        if name in self.json.keys():
             pass
         elif name in self.renamed_fields:
             #What this acomplishes is that it let's us ask for
@@ -120,7 +135,8 @@ class ResponseObject(object):
             temp.extend([key,disp_str])
         for key in self.other_fields_for_display:
             value = self.__dict__[key]
-            temp.extend([key,value])
+            disp_str = _short_string(value)
+            temp.extend([key,disp_str])
         return display_class(self,temp)
     
 def _short_string(value):
@@ -191,14 +207,55 @@ class TypesList(ResponseObject):
 #                'id',self.id]
 #        return utils.property_values_to_string(pv)
   
-class JournalList(ResponseObject):
+#---- Funders
+#=============================================
+class FundersSearchResult(ResponseObject):
+    
+    other_fields_for_display = ['api','citems']
+    
+    def __init__(self,json,api):  
+        self.api = api
+        temp = {'items':json}
+        super(FundersSearchResult, self).__init__(temp)
+        
+        #This class returns only the items as a list (json)
+        #rather than as a dict with meta data and the results
+        self.citems = FundersList(json,api)  
+        
+class Funder(ResponseObject):
+
+    """
+        
+    """
     
     def __init__(self,json,api):
-        super(JournalList, self).__init__(json)
+        super(Funder, self).__init__(json)
+
+
+
+class FundersList(ExtendedList):
+    
+    item_class = Funder
+    
+    def __init__(self,json,api):
+        super(FundersList, self).__init__(json,api)      
+
+
         
+#---- Journals
+#=============================================
+class JournalSearchResult(ResponseObject):
+    
+    other_fields_for_display = ['api','citems']
+    
+    def __init__(self,json,api):
         self.api = api
-        self.journals = [Journal(x,api) for x in self.json]
+        temp = {'items':json}
+        super(JournalSearchResult, self).__init__(temp)
         
+        #This class returns only the items as a list (json)
+        #rather than as a dict with meta data and the results
+        self.citems = JournalsList(json,api)        
 
 class Journal(ResponseObject):
 
@@ -220,37 +277,117 @@ class Journal(ResponseObject):
     
     def __init__(self,json,api):
         super(Journal, self).__init__(json)
-
-
-    @classmethod
-    def fields(cls):
-        #TODO: this is not done, will also need to split by type
-        return _l2d([
-        'breakdowns', None, 
-        'last_status_check_time',None,
-        'counts', None, 
-        'ISSN', None,
-        'publisher',None,
-        'coverage',None,
-        'title',None,
-        'flags',None])
         
-    def __repr__(self):
-        pv = ['breakdowns',td(self.breakdowns),
-                'last_status_check_time',self.last_status_check_time,
-                'counts',td(self.counts),
-                'ISSN',self.ISSN,
-                'publisher',self.publisher,
-                'coverage',td(self.coverage),
-                'title',self.title,
-                'flags',td(self.flags)]
+    #TODO: Support getting works from this journal ...
 
-        return utils.property_values_to_string(pv)        
-        #'all_titles',lambda x,y: _get_alternate_field(x,'title'), #This is an example, we might not really use it
+class JournalsList(ExtendedList):
+    
+    item_class = Journal
+    
+    def __init__(self,json,api):
+        super(JournalsList, self).__init__(json,api)       
 
+  
 
+#---- Licenses
+#===========================================================
+class LicenseSearchResult(ResponseObject):
+    
+    other_fields_for_display = ['api','citems']
+    
+    def __init__(self,json,api):
+        self.api = api
+        temp = {'items':json}
+        super(LicenseSearchResult, self).__init__(temp)
+        
+        #This class returns only the items as a list (json)
+        #rather than as a dict with meta data and the results
+        self.citems = LicensesList(json,api)    
 
+class License(ResponseObject):
+
+    """
+    Examples
+    --------
+    <class 'crossref.models.Journal'>:
+           URL: http://academic.oup.com/journals/pages/about_us/legal/notices
+    work-count: 2882
+    """
+    
+    
+    def __init__(self,json,api):
+        super(License, self).__init__(json)
+
+class LicensesList(ExtendedList):
+    
+    item_class = License
+    
+    def __init__(self,json,api):
+        super(LicensesList, self).__init__(json,api)  
       
+
+#---- Members
+#==========================================
+class MembersSearchResult(ResponseObject):
+    
+    other_fields_for_display = ['api','citems']
+    
+    def __init__(self,json,api):
+        self.api = api
+        super(MembersSearchResult, self).__init__(json)
+        self.citems = MembersList(json['items'],api)
+        
+       
+class Member(ResponseObject):
+    
+    """
+    Documentation??? - I can't find it
+    https://github.com/Crossref/rest-api-doc/blob/master/api_format.md#work
+
+
+    Relevant Endpoints
+    ------------------
+    /members/{member_id}
+    
+    Example Data
+    ------------
+        <class 'crossref.models.Member'>:
+    last_status_check_time: 1522803773023
+              primary_name: Wiley-Blackwell
+                    counts: <dict> with 3 fields
+                breakdowns: <dict> with 1 fields
+                        => # of dois by year
+                  prefixes: <list> len 33
+                  coverage: <dict> with 18 fields
+                        => % of tasks that have been completed
+                            e.g. 'references-current' : 0.729
+                    prefix: <list> len 33
+                        id: 311
+                    tokens: ['wiley', 'blackwell']
+                     flags: <dict> with 20 fields
+                        => indicates deposit behavior
+                  location: 111 River Street Hoboken NJ 07...
+                     names: <list> len 33
+                        => contains list of journals?
+    
+    """
+
+    def __init__(self,json,api):
+        super(Member, self).__init__(json)       
+        
+        #Any other methods
+        #=> get prefix info
+ 
+class MembersList(ExtendedList):
+    
+    item_class = Member
+    
+    def __init__(self,json,api):
+        super(MembersList, self).__init__(json,api) 
+
+
+#---- Works
+#===========================================================
 class WorkList(ResponseObject):
     
     """
@@ -294,7 +431,6 @@ class WorkList(ResponseObject):
 
         return utils.property_values_to_string(pv)        
 
-#---- Works
 
 class Work(ResponseObject):
     
@@ -359,89 +495,7 @@ class Prefix(ResponseObject):
         #TODO: Implement this
         pass
 
-#---- Members
-#==========================================
-class MembersSearchResult(ResponseObject):
     
-    other_fields_for_display = ['api','citems']
-    
-    def __init__(self,json,api):
-        self.api = api
-        super(MembersSearchResult, self).__init__(json)
-        self.citems = MembersList(json['items'],api)
-        
-    
-
-        
-        
-        #self.api = api
-        #super(MemberList, self).__init__(json)
-        #self.docs = [Member(utils.clean_dict_keys(x),api) for x in self.json]
-
-    
-    #def item_as_class(self,index):
-    #    return Member(self.json['items'][index],self.api)
-    
-    #TODO: Can we add converted documents
-    #=> Let's just show the methods
-    
-    #TODO: 
-    #- iterable
-    #- Next X
-    
-    """
-    #def __repr__(self):
-    #    pv = ['docs',cld(self.docs)]
-    #
-    #    return utils.property_values_to_string(pv) 
-    """
-        
-class Member(ResponseObject):
-    
-    """
-    Documentation??? - I can't find it
-    https://github.com/Crossref/rest-api-doc/blob/master/api_format.md#work
-
-
-    Relevant Endpoints
-    ------------------
-    /members/{member_id}
-    
-    Example Data
-    ------------
-        <class 'crossref.models.Member'>:
-    last_status_check_time: 1522803773023
-              primary_name: Wiley-Blackwell
-                    counts: <dict> with 3 fields
-                breakdowns: <dict> with 1 fields
-                        => # of dois by year
-                  prefixes: <list> len 33
-                  coverage: <dict> with 18 fields
-                        => % of tasks that have been completed
-                            e.g. 'references-current' : 0.729
-                    prefix: <list> len 33
-                        id: 311
-                    tokens: ['wiley', 'blackwell']
-                     flags: <dict> with 20 fields
-                        => indicates deposit behavior
-                  location: 111 River Street Hoboken NJ 07...
-                     names: <list> len 33
-                        => contains list of journals?
-    
-    """
-
-    def __init__(self,json,api):
-        super(Member, self).__init__(json)       
-        
-        #Any other methods
-        #=> get prefix info
- 
-class MembersList(ExtendedList):
-    
-    item_class = Member
-    
-    def __init__(self,json,api):
-        super(MembersList, self).__init__(json,api)       
 
 #----  Work Types
 #------------------------------------------------------------------------

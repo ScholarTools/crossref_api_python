@@ -315,7 +315,7 @@ class API(object):
         else:
             return object_fh(object_json,self,response_params)
     
-    def _make_list_request(self,url,object_fh,options,_filter):
+    def _make_search_request(self,url,object_fh,options,_filter):
 
         """
         Parameters
@@ -340,11 +340,28 @@ class API(object):
     def search_licenses(self,options=None,_filter=None):
         pass
     
-    def search_journals(self,options=None,_filter=None):
+    #---- Funders
+    #===========================================================
+    def funders(self,options=None,_filter=None):
+        
+        url = self.BASE_URL + 'funders'
+        return self._make_search_request(url,models.FundersSearchResult,options,_filter)
+        
+    
+    #---- Journals
+    #===========================================================
+    def journals(self,options=None,_filter=None):
         
         url = self.BASE_URL + 'journals'
-        return self._make_list_request(url,models.JournalList,options,_filter)
+        return self._make_search_request(url,models.JournalSearchResult,options,_filter)
     
+    #---- Licenses 
+    #===========================================================
+    def licenses(self,options=None,_filter=None):
+        
+        url = self.BASE_URL + 'licenses'
+        return self._make_search_request(url,models.LicenseSearchResult,options,_filter)    
+        
     def search_works(self,options=None,_filter=None):
         """
         
@@ -383,10 +400,10 @@ class API(object):
     def search_works_by_journal(self):
         pass
     
-    def doi_list(self,options):
+    def dois(self,options):
         pass
 
-    def doi_meta(self,doi,**kwargs):
+    def doi_info(self,doi,**kwargs):
         """
         
         Returns
@@ -425,12 +442,6 @@ class API(object):
         
         #return self._make_get_request(url,models.Work,kwargs)
         
-    def funders_list(self,options=None,_filter=None):
-
-        #url = self.BASE_URL + 'works'
-        
-        pass
-    
     def prefix_info(self,prefix_id):
         """
         Returns metadata for the DOI owner prefix
