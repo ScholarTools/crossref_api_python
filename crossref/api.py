@@ -17,59 +17,12 @@ Status:
 6) Clean up work response model, why are we cleaning dict keys?????
 
 
-End Points
-----------
-  ** /works :    API.search_works
-
-Returns a list of works (journal articles, conference proceedings, 
-books, components, etc) that matches the given search.
-
-
-  ** /funders : NYI	
-
-Returns a list of all funders in the FundRef Registry
-
-
-  ** /members : NYI	
-   
-Returns a list of all CrossRef members (mostly publishers)
-
-
-  ** /types	: API.work_types
-
-Returns a list of valid work types
-
-
-  ** /licenses : NYI	
-
-Return a list of licenses applied to works in CrossRef metadata
-
-
-    /journals	
-
-Return a list of journals in the CrossRef database
-
-
-
-/works/{doi}   :API.doi_meta
-        Returns metadata for the specified CrossRef DOI
-
-
-
-/works	returns a list of all works , 20 per page
-
-
-
 /funders/{funder_id}	returns metadata for specified funder and its suborganizations
 /prefixes/{owner_prefix}	returns metadata for the DOI owner prefix
 /members/{member_id}	returns metadata for a CrossRef member
 /types/{type_id}	returns information about a metadata work type
 /journals/{issn}	returns information about a journal with the given ISSN
 """
-
-#TODO: Expose common aspects via def
-
-
 
 """
 The works component can be appended to other resources.
@@ -83,12 +36,8 @@ resource	description
 /journals/{issn}/works	returns a list of works in the given journal
 """
 
+VERSION = '0.7'
 
-import requests
-from . import errors
-from . import models
-from . import utils
-from .utils import get_truncated_display_string as td
 
 import sys
 import re
@@ -96,6 +45,23 @@ import re
 PY2 = int(sys.version[0]) == 2
 
 
+#3rd party
+#------------------------
+import requests
+
+
+#Local Imports
+#------------------------
+from . import errors
+from . import models
+from . import utils
+from .utils import get_truncated_display_string as td
+
+try:
+    from . import user_config
+except:
+    raise Exception("User Config is required for running the codes")
+    
 class Filter(object):
     """
     filter={filter_name}:{value}	filter results by specific fields
@@ -282,12 +248,27 @@ class API(object):
         if params is None:
             params = {}
         else:
+            #????? - what are we doing here? - only including ones with values
+            #Does requests do this for us?
             if PY2:
                 params = dict((k, v) for k, v in params.iteritems() if v)
             else:
                 params = dict((k, v) for k, v in params.items() if v)
      
-        r = self.session.get(url,params=params)      
+
+
+        #Example          
+        #GroovyBib/1.1 (https://example.org/GroovyBib/; mailto:GroovyBib@example.org) BasedOnFunkyLib/1.4.
+
+        #It is unclear if we need to match this format
+        #This is good enough for now
+        #Eventually we might allow a user to describe their application
+        #version, and url
+        ua_str = 'st_crossref/%s (https://github.com/ScholarTools/crossref_api_python; mailto:%s)' % (VERSION,user_config.email)
+        
+        headers = {'user-agent': ua_str}
+        
+        r = self.session.get(url,params=params,headers=headers)      
 
         self.last_url = url
         self.last_response = r     
@@ -561,6 +542,16 @@ class ResponseMessageInfo(object):
                 'facets',self.facets]
         
         return utils.property_values_to_string(pv)
+
+def _validate_config(user_config):
+    
+    #1) Validate email
+    if hasattr(user_config,'email') and len(user_config.email) > 0:
+        pass
+    else:
+        raise Exception("Invalid email, email required in user_config")
+
+_validate_config(user_config)
 
 def _clean_doi(input_doi):
 

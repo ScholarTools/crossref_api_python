@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Other links:
+Other Links
+-----------------------
 Main Documentation
     https://github.com/CrossRef/rest-api-doc
 Demo with notes
@@ -20,6 +21,8 @@ DONE    /journals
 DONE    /liceneses - returns a list of all Crossref members (mostly publishers)
 DONE    /members - returns a list of all Crossref members (mostly publishers)
 DONE    /types - returns a list of valid work types
+
+#Still to do!
 /works
 
 
@@ -44,7 +47,6 @@ api = crossref.API(debug=True)
 #---- /funders
 #===========================================
 temp = api.funders()
-
 
 #---- /journals
 #===========================================

@@ -2,3 +2,4 @@
 *.pyc
 *.dat
 __pycache__/*
+crossref/user_config.py
