@@ -21,13 +21,11 @@ Other implementations:
     
 Endpoint List
 -----------------------
-DONE    /funders - returns a list of all funders in the Funder Registry
-DONE    /journals
-DONE    /liceneses - returns a list of all Crossref members (mostly publishers)
-DONE    /members - returns a list of all Crossref members (mostly publishers)
-DONE    /types - returns a list of valid work types
-
-#Still to do!
+/funders - returns a list of all funders in the Funder Registry
+/journals
+/liceneses - returns a list of all Crossref members (mostly publishers)
+/members - returns a list of all Crossref members (mostly publishers)
+/types - returns a list of valid work types
 /works
 
 
@@ -46,7 +44,6 @@ Secondary Endpoint List
 
 import crossref
 from crossref import errors
-from crossref.api import QueryOptions
 
 api = crossref.API(debug=True)
 
@@ -57,17 +54,19 @@ api = crossref.API(debug=True)
 #===========================================
 temp = api.funders()
 
-options = QueryOptions()
-options.query = 'National Cancer Institute'
-temp = api.funders(options=options)
+temp = api.funders(query='National Cancer Institute')
 
 #---- /journals
 #===========================================
 temp = api.journals()
 
+t#emp = api.journals()
+
 #---- /licenses
 #===========================================
 temp = api.licenses()
+
+temp = api.licenses(query='creative')
 
 #---- /members
 #===========================================
@@ -83,13 +82,15 @@ temp = api.work_types()
 #========================================
 temp = api.works()
 
-temp = api.works(_filter='type:book-section')
+temp = api.works(select='ISSN,DOI')
 
-temp = api.works(_filter='has-references:1')
+temp = api.works(filter='type:book-section')
 
-temp = api.works(_filter='has-funder:t')
+temp = api.works(filter='has-references:1')
 
-temp = api.works(_filter='funder:100000054')
+temp = api.works(filter='has-funder:t')
+
+temp = api.works(filter='funder:100000054')
 
 #yyyy
 #yyyy-MM

@@ -303,17 +303,21 @@ class API(object):
         self.session = requests.Session()
         self._work_types = None
      
-    def _make_get_request(self,url,object_fh, params=None, response_params=None,is_list=False):
+    @staticmethod    
+    def search_fields():
+        pass
+        
+    def _make_get_request(self,url,object_fh,params,return_type):
     
         if params is None:
             params = {}
-        else:
-            #????? - what are we doing here? - only including ones with values
-            #Does requests do this for us?
-            if PY2:
-                params = dict((k, v) for k, v in params.iteritems() if v)
-            else:
-                params = dict((k, v) for k, v in params.items() if v)
+        #else:
+        #    #????? - what are we doing here? - only including ones with values
+        #    #Does requests do this for us?
+        #    if PY2:
+        #        params = dict((k, v) for k, v in params.iteritems() if v)
+        #    else:
+        #       params = dict((k, v) for k, v in params.items() if v)
      
 
 
@@ -328,8 +332,13 @@ class API(object):
         
         headers = {'user-agent': ua_str}
         
-        r = self.session.get(url,params=params,headers=headers)      
+        r1 = requests.Request('GET',url,params=params,headers=headers)
+        prepped = r1.prepare()
+        r = self.session.send(prepped)
+        
+        #r = self.session.get(url,params=params,headers=headers)      
 
+        self.last_prepped = prepped
         self.last_url = url
         self.last_response = r     
         self.last_params = params     
@@ -339,38 +348,60 @@ class API(object):
             #TODO: Make this a named exception
             raise errors.RequestError(r.text)
         
-        j = r.json()
-        if j['status'] == 'failed':
-            raise Exception(j['message'])
+        json_data = r.json()
+        if json_data['status'] == 'failed':
+            raise Exception(json_data['message'])
             
-        temp = ResponseMessageInfo(j,is_list)
-        object_json = temp.json
+        #temp = ResponseMessageInfo(j,is_list)
+        #object_json = temp.json
             
         """
         {'status': 'failed', 'message-type': 'validation-failure', 
         'message': [{'value': 'sample', 
         'message': 'This route does not support sample', 'type': 'parameter-not-allowed'}]}
         """     
-        if response_params is None:
-            return object_fh(object_json,self)
-        else:
-            return object_fh(object_json,self,response_params)
-    
-    def _get_options(n_per_page=None,n_random=None,query=None,sort=None):
         
-        payload = {
+        #TODO: return_type
+        
+        return object_fh(json_data,self)
+    
+    def _options_to_dict(self,filter=None,n_per_page=None,n_random=None,
+                     offset=None,query=None,sort_by=None,order=None,
+                     facet=None,cursor=None,select=None):
+        #https://github.com/CrossRef/rest-api-doc#parameters
+        
+        #I'm not thrilled about order ...
+        #
+        params = {
+                'cursor':cursor,
+                'facet':facet,
+                'filter':filter,
+                'offset':offset,
+                'order':order,
                 'query':query,
                 'rows':n_per_page,
+                'select':select,
                 'sample':n_random,
-                'sort':sort}
+                'sort':sort_by}
+        
+        #TODO: We have some more processing to do here
+        #=> filter processsing
+        #=> select
+        
+        """
+        DONE query	query terms
+        DONE filter={filter_name}:{value}	filter results by specific fields
+        DONE rows={#}	results per per page
+        DONE offset={#} (mak 10k)	result offset (user cursor for larger /works result sets)
+        DONE sample={#} (max 100)	return random N results
+        DONE sort={#}	sort results by a certain field
+        DONE order={#}	set the sort order to asc or desc
+        DONE facet={#}	enable facet information in responses
+        DONE cursor={#}	deep page through /works result sets
+        
+        """
                 
-                
-                }
-        payload = {'query':query, 'filter':filt, 'offset':offset,
-             'rows':limit, 'sample':sample, 'sort':sort,
-             'order':order, 'facet':facet, 'select':select,
-             'cursor':cursor}
-        pass
+        return params
     
     def _make_search_request(self,url,object_fh,options=None,_filter=None):
 
@@ -400,36 +431,74 @@ class API(object):
         #TODO: We could make a post request instead, this might be preferable
         #object_fh, params=None, response_params=None,is_list=False
         return self._make_get_request(url,object_fh,params=params,is_list=True)
-    
-    def search_licenses(self,options=None,_filter=None):
-        pass
-    
-    #---- Funders
-    #===========================================================
-    def funders(self,options=None,_filter=None):
         
+    def funders(self,filter=None,n_per_page=None,n_random=None,
+                     offset=None,query=None,sort_by=None,order=None,
+                     facet=None,cursor=None,return_type=None):
+        
+        """
+        select not supported
+        """
+        
+        params = self._options_to_dict(filter=filter,n_per_page=n_per_page,
+             n_random=n_random,offset=offset,query=query,
+             sort_by=sort_by,order=order,facet=facet,cursor=cursor,
+             select=None)
+                
         url = self.BASE_URL + 'funders'
-        return self._make_search_request(url,models.FundersSearchResult,options,_filter)
-        
+        return self._make_get_request(url,models.FundersSearchResult,params,return_type)
     
-    #---- Journals
-    #===========================================================
-    def journals(self,options=None,_filter=None):
+    def journals(self,filter=None,n_per_page=None,n_random=None,
+                     offset=None,query=None,sort_by=None,order=None,
+                     facet=None,cursor=None,return_type=None):
+        
+        params = self._options_to_dict(filter=filter,n_per_page=n_per_page,
+             n_random=n_random,offset=offset,query=query,
+             sort_by=sort_by,order=order,facet=facet,cursor=cursor,
+             select=None)
         
         url = self.BASE_URL + 'journals'
-        return self._make_search_request(url,models.JournalSearchResult,options,_filter)
+        return self._make_get_request(url,models.JournalSearchResult,params,return_type)
     
-    #---- Licenses 
-    #===========================================================
-    def licenses(self,options=None,_filter=None):
+    def licenses(self,filter=None,n_per_page=None,n_random=None,
+                     offset=None,query=None,sort_by=None,order=None,
+                     facet=None,cursor=None,select=None,return_type=None):
+        
+        """
+        
+        ??? - This seems to return all licenses
+        
+        Example Data
+        ------------
+        .URL
+        .work-count
+        """
+        
+        params = self._options_to_dict(filter=filter,n_per_page=n_per_page,
+             n_random=n_random,offset=offset,query=query,
+             sort_by=sort_by,order=order,facet=facet,cursor=cursor,
+             select=None)
         
         url = self.BASE_URL + 'licenses'
-        return self._make_search_request(url,models.LicenseSearchResult,options,_filter)    
+        #return self._make_search_request(url,models.LicenseSearchResult,options,_filter)
+        return self._make_get_request(url,models.LicenseSearchResult,params,return_type)    
+    
+    def members(self,filter=None,n_per_page=None,n_random=None,
+                     offset=None,query=None,sort_by=None,order=None,
+                     facet=None,cursor=None,select=None,return_type=None):
         
-    #---- Works
-    #===========================================================
-    def works(self,options=None,_filter=None,
-              n_per_page=None):
+        
+        params = self._options_to_dict(filter=filter,n_per_page=n_per_page,
+             n_random=n_random,offset=offset,query=query,
+             sort_by=sort_by,order=order,facet=facet,cursor=cursor,
+             select=select)
+        
+        url = self.BASE_URL + 'members/'
+        return self._make_get_request(url,models.MembersSearchResult,params,return_type)
+    
+    def works(self,filter=None,n_per_page=None,n_random=None,
+                     offset=None,query=None,sort_by=None,order=None,
+                     facet=None,cursor=None,select=None,return_type=None):
         """
         
         Parameters
@@ -449,9 +518,22 @@ class API(object):
         TODO: Make sure the model methods show in the display ...
         """
         
-        url = self.BASE_URL + 'works'
-        return self._make_search_request(url,models.WorksSearchResult,options,_filter)
+        params = self._options_to_dict(filter=filter,n_per_page=n_per_page,
+             n_random=n_random,offset=offset,query=query,
+             sort_by=sort_by,order=order,facet=facet,cursor=cursor,
+             select=select)
         
+        url = self.BASE_URL + 'works'
+        #return self._make_search_request(url,models.WorksSearchResult,options,_filter)
+        return self._make_get_request(url,models.WorksSearchResult,params,return_type)
+
+    def work_types(self):
+        
+        if self._work_types is None:
+            url = self.BASE_URL + 'types'
+            self._work_types = self._make_get_request(url,models.TypesList,None,None)
+
+        return self._work_types
     
     def doi_info(self,doi,**kwargs):
         """
@@ -539,16 +621,9 @@ class API(object):
         url = self.BASE_URL + 'members/' + member_id
         return self._make_get_request(url,models.Member)
     
-    def members(self):
-        url = self.BASE_URL + 'members/'
-        return self._make_get_request(url,models.MembersSearchResult)
-    
-    def work_types(self):
-        if self._work_types is None:
-            url = self.BASE_URL + 'types'
-            self._work_types = self._make_search_request(url,models.TypesList,None,None)
 
-        return self._work_types
+    
+
     
     def work_type_info(self,type_id):
         """

@@ -188,9 +188,10 @@ class TypesList(ResponseObject):
     """
     
     def __init__(self,json,api):
-        super(TypesList, self).__init__(json)    
-        #self.objs = [Type(x,api) for x in self.json]
-        self.raw = json
+        data = json['message']['items']
+        super(TypesList, self).__init__(data)   
+               
+        self.raw = data
         self.ids = [x['id'] for x in self.json]
         self.labels = [x['label'] for x in self.json]
         #Not sure how to make this more useful to the end user (if at all)
@@ -202,48 +203,22 @@ class TypesList(ResponseObject):
 
         return utils.property_values_to_string(pv)      
 
-#class Type(ResponseObject):
-#    """
-#    Created from TypesList
-#    
-#    
-#    Attributes
-#    ----------
-#    label
-#    id 
-#    """
-#    def __init__(self,json,api):
-#        super(Type, self).__init__(json)    
-#
-#    def _null(self):
-#        self.label = None
-#        self.id = None
-#
-#    @classmethod
-#    def fields(cls):
-#        return _l2d([
-#        'label', None, 
-#        'id',None])
-#        
-#    def __repr__(self,pv_only=False):
-#        pv = ['label',self.label,
-#                'id',self.id]
-#        return utils.property_values_to_string(pv)
   
 #---- Funders
 #=============================================
 class FundersSearchResult(ResponseObject):
     
-    other_fields_for_display = ['api','citems']
+    other_fields_for_display = ['api','citems','message_version']
     
     def __init__(self,json,api):  
         self.api = api
-        temp = {'items':json}
+        self.message_version = json['message-version']
+        temp = {'items':json['message']['items']}
         super(FundersSearchResult, self).__init__(temp)
         
         #This class returns only the items as a list (json)
         #rather than as a dict with meta data and the results
-        self.citems = FundersList(json,api)  
+        self.citems = FundersList(temp['items'],api)  
         
 class Funder(ResponseObject):
 
@@ -269,16 +244,20 @@ class FundersList(ExtendedList):
 #=============================================
 class JournalSearchResult(ResponseObject):
     
-    other_fields_for_display = ['api','citems']
+    other_fields_for_display = ['api','citems','message_version']
     
     def __init__(self,json,api):
         self.api = api
-        temp = {'items':json}
+        self.message_version = json['message-version']
+        
+        #message-type => 'journal-list'
+        
+        temp = {'items':json['message']['items']}
         super(JournalSearchResult, self).__init__(temp)
         
         #This class returns only the items as a list (json)
         #rather than as a dict with meta data and the results
-        self.citems = JournalsList(json,api)        
+        self.citems = JournalsList(temp['items'],api)        
 
 class Journal(ResponseObject):
 
@@ -316,16 +295,14 @@ class JournalsList(ExtendedList):
 #===========================================================
 class LicenseSearchResult(ResponseObject):
     
-    other_fields_for_display = ['api','citems']
+    other_fields_for_display = ['api','citems','message_version']
     
     def __init__(self,json,api):
         self.api = api
-        temp = {'items':json}
+        self.message_version = json['message-version']
+        temp = {'items':json['message']['items']}
         super(LicenseSearchResult, self).__init__(temp)
-        
-        #This class returns only the items as a list (json)
-        #rather than as a dict with meta data and the results
-        self.citems = LicensesList(json,api)    
+        self.citems = LicensesList(temp['items'],api)    
 
 class License(ResponseObject):
 
@@ -353,12 +330,14 @@ class LicensesList(ExtendedList):
 #==========================================
 class MembersSearchResult(ResponseObject):
     
-    other_fields_for_display = ['api','citems']
+    other_fields_for_display = ['api','citems','message_version']
     
     def __init__(self,json,api):
         self.api = api
-        super(MembersSearchResult, self).__init__(json)
-        self.citems = MembersList(json['items'],api)
+        self.message_version = json['message-version']
+        temp = {'items':json['message']['items']}
+        super(MembersSearchResult, self).__init__(temp)
+        self.citems = MembersList(temp['items'],api)    
         
        
 class Member(ResponseObject):
@@ -419,15 +398,15 @@ class WorksSearchResult(ResponseObject):
       
     """
     
-    other_fields_for_display = ['api','citems']
+    other_fields_for_display = ['api','citems','message_version']
     
     
     def __init__(self,json,api):
         self.api = api
-        temp = {'items':json}
+        self.message_version = json['message-version']
+        temp = {'items':json['message']['items']}
         super(WorksSearchResult, self).__init__(temp)
-               
-        self.citems = FundersList(json,api)  
+        self.citems = WorksList(temp['items'],api) 
 
 class Work(ResponseObject):
     
