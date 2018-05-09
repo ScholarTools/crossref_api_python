@@ -3,10 +3,12 @@
 #TODO: break out display utils to another module
 """
 
-def display_class(class_instance,pv):
+def display_class(class_instance,pv,method_pv=None):
     
-    #Do we want to to specify the full path to the class ...?
-    return '%s:\n' % type(class_instance) + property_values_to_string(pv,extra_indentation=4)
+    #TODO: Handle methods
+    
+    return ('%s:\n' % type(class_instance) 
+            + property_values_to_string(pv,extra_indentation=4))
 
 def float_or_none_to_string(x):
     if x is None:

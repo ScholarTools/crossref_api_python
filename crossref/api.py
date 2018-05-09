@@ -56,17 +56,58 @@ from . import errors
 from . import models
 from . import utils
 from .utils import get_truncated_display_string as td
+display_class = utils.display_class
 
 try:
     from . import user_config
 except:
     raise Exception("User Config is required for running the codes")
     
+class FieldQueries(object):
+    """
+    https://github.com/CrossRef/rest-api-doc#works-field-queries
+    
+    JAH: This is not yet setup/tested
+    
+    Attributes
+    ----------
+    title
+    container-title
+    author
+    editor
+    chair
+    translator
+    contributor
+    bibliographic
+    affiliation
+    
+    """
+
+    def __init__(self):
+
+        self.title = None
+        self.container_title = None
+        self.author = None
+        self.editor = None
+        self.chair = None
+        self.translator = None
+        self.contributor = None
+        self.bibliographic = None
+        self.affiliation = None
+        
+#/works filters
+#https://github.com/CrossRef/rest-api-doc#filter-names
+
+#I'm not sure what I want to do with this ...    
 class Filter(object):
     """
+    https://github.com/CrossRef/rest-api-doc#filter-names
+    
     filter={filter_name}:{value}	filter results by specific fields
     """
-    pass
+    
+    def __init__(self):
+        pass
 
 """
 has-funder		metadata which includes one or more funder entry
@@ -120,7 +161,9 @@ article-number		metadata for records with a given article number
 
 class QueryOptions(object):
     """
-    https://github.com/CrossRef/rest-api-doc#parameters
+    https://github.com/CrossRef/rest-api-doc#parametershing besides 
+    
+    How much of this works for non-works endpoints
     
     Attributes
     ----------
@@ -129,6 +172,8 @@ class QueryOptions(object):
         TODO: Add documentation on how to use
         e.g.
             'renear+-ontologies' #renear but not ontologies
+    field_queries : list
+        These should field=value        
     rows : int
         Number of results per page
         #TODO might rename or alias
@@ -137,12 +182,18 @@ class QueryOptions(object):
         If specified, this return N random results. This can be useful 
         for testing.
     sort :
+        https://github.com/CrossRef/rest-api-doc#sorting
         - score
-        - relevance
-        - updated
+        - relevance - 'same as score'
+        - updated - currently the same as 'deposited'
         - deposited
         - indexed
         - published
+        - published-print
+        - published-online
+        - issued
+        - is-referenced-by-count
+        - references-count
     order :
         - asc - ascending order
         - desc - descending order
@@ -161,11 +212,17 @@ class QueryOptions(object):
 
     fields = ['query','rows','offset','sample','sort','order','facet']
 
+    SORT_OPTIONS = ['relevance','updated','indexed','published',
+                    'published-print'
+                    'published-online','issued','is-referenced-by-count',
+                    'references-count']
+
     def __init__(self):
         self.__dict__['query_params'] = {}
 
     def _null(self):
         self.query = None
+        self.field_queries = None
         self.rows = None
         self.offset = None
         self.sample = None
@@ -195,11 +252,14 @@ class QueryOptions(object):
             raise Exception('Unable to set attribute: %s'%name)
     
     def __repr__(self): 
-        pv = ['query',self.query,
+        pv = ['SORT_OPTIONS',td(self.SORT_OPTIONS),
+              'sort',self.sort,
+              'field_queries',self.field_queries,
+              'query',self.query,
             'rows',self.rows,
             'offset',self.offset,
             'sample',self.sample,
-            'sort',self.sort,
+            
             'order',self.order,
             'facet',self.facet]
 
@@ -296,7 +356,23 @@ class API(object):
         else:
             return object_fh(object_json,self,response_params)
     
-    def _make_search_request(self,url,object_fh,options,_filter):
+    def _get_options(n_per_page=None,n_random=None,query=None,sort=None):
+        
+        payload = {
+                'query':query,
+                'rows':n_per_page,
+                'sample':n_random,
+                'sort':sort}
+                
+                
+                }
+        payload = {'query':query, 'filter':filt, 'offset':offset,
+             'rows':limit, 'sample':sample, 'sort':sort,
+             'order':order, 'facet':facet, 'select':select,
+             'cursor':cursor}
+        pass
+    
+    def _make_search_request(self,url,object_fh,options=None,_filter=None):
 
         """
         Parameters
@@ -307,16 +383,23 @@ class API(object):
         _filter :
         TODO: We could also allow options to be a dict rather than forcing the object creation
         """
-        
-        #TODO: Consider renaming to _make_search_request
-        
+                
         if options is not None:
-            qd = options.get_query_dict()
+            params = options.get_query_dict()
         else:
-            qd = {}
+            params = {}
+            
+        if _filter is not None:
+            #TODO: This will need to changed
+            #string
+            #list
+            #object?
+            params['filter'] = _filter
+            
                
         #TODO: We could make a post request instead, this might be preferable
-        return self._make_get_request(url,object_fh,qd,is_list=True)
+        #object_fh, params=None, response_params=None,is_list=False
+        return self._make_get_request(url,object_fh,params=params,is_list=True)
     
     def search_licenses(self,options=None,_filter=None):
         pass
@@ -343,7 +426,10 @@ class API(object):
         url = self.BASE_URL + 'licenses'
         return self._make_search_request(url,models.LicenseSearchResult,options,_filter)    
         
-    def search_works(self,options=None,_filter=None):
+    #---- Works
+    #===========================================================
+    def works(self,options=None,_filter=None,
+              n_per_page=None):
         """
         
         Parameters
@@ -364,26 +450,9 @@ class API(object):
         """
         
         url = self.BASE_URL + 'works'
-        return self._make_list_request(url,models.WorkList,options,_filter)
+        return self._make_search_request(url,models.WorksSearchResult,options,_filter)
         
-    def search_works_by_funder(self):
-        pass
     
-    def search_works_by_type(self):
-        pass
-    
-    def search_works_by_owner(self):
-        pass
-    
-    def search_works_by_member(self):
-        pass
-    
-    def search_works_by_journal(self):
-        pass
-    
-    def dois(self,options):
-        pass
-
     def doi_info(self,doi,**kwargs):
         """
         
@@ -477,7 +546,7 @@ class API(object):
     def work_types(self):
         if self._work_types is None:
             url = self.BASE_URL + 'types'
-            self._work_types = self._make_list_request(url,models.TypesList,None,None)
+            self._work_types = self._make_search_request(url,models.TypesList,None,None)
 
         return self._work_types
     

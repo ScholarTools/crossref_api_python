@@ -6,6 +6,10 @@
 #import itertools
 from collections import defaultdict
 #from datetime import datetime
+import sys
+import re
+
+PY2 = int(sys.version[0]) == 2
 
 #Local imports
 #--------------------------
@@ -16,6 +20,12 @@ cld = utils.get_list_class_display
 pv = utils.property_values_to_string
 
 #keys are based on ids
+
+if PY2:
+    import __builtin__ as builtins
+else:
+    import builtins
+
 
 
 #----- Generic 
@@ -29,7 +39,7 @@ class ExtendedList(list):
     #This class dynamically creates a class instance when accessing a
     #member of the list
     
-    #This needs to be defined as a function handle for the sub class
+    #This needs to be defined as a function handle by the sub class
     item_class = None
     
     def __init__(self, data, api):
@@ -52,7 +62,6 @@ class ExtendedList(list):
        return '%d element list of type %s' %(len(self.data),self.item_class)
 
 
-#TODO: Support getitem
 #=> issn-type
 #=> last-status-check-time
 
@@ -77,6 +86,12 @@ class ResponseObject(object):
         json : dict
         """
         self.json = json
+        
+    def get(self,key,default=None):
+        if key in self.json.keys():
+            return self.json[key]
+        else:
+            return default
         
     def __getitem__(self, key):
         return self.json[key]    
@@ -112,11 +127,17 @@ class ResponseObject(object):
         else:
             return value
         
-    @classmethod
-    def __dir__(cls):
-        d = set(list(dir(cls)) + cls.fields())
-        d.remove('fields')
-        d.remove('object_fields')
+    def __dir__(self):
+        #Note that fields() needs an instance :/
+        #
+        #d  = super(ResponseObject, self).__dir__()
+        #d = set(list(dir(super(ResponseObject, self))) + self.fields())
+        #d = set(list(builtins.dir(self)) + self.fields())
+        d = dir(type(self)) + list(self.__dict__.keys()) + self.fields()
+        #import pdb
+        #pdb.set_trace()
+        #d.remove('fields')
+        #d.remove('object_fields')
 
         return sorted(d)
 
@@ -154,6 +175,8 @@ def _short_string(value):
         s = str(value)
         return td(s,max_length=MAX_LENGTH)  
 
+#---- Types
+#============================================
 class TypesList(ResponseObject):
     
     """
@@ -388,49 +411,23 @@ class MembersList(ExtendedList):
 
 #---- Works
 #===========================================================
-class WorkList(ResponseObject):
+class WorksSearchResult(ResponseObject):
     
     """
     Attributes
     ----------
-    docs : [Work]    
+      
     """
+    
+    other_fields_for_display = ['api','citems']
     
     
     def __init__(self,json,api):
-        super(WorkList, self).__init__(json)
-        
-        self.api = api  
-        self.docs = [_create_work(utils.clean_dict_keys(x),api) for x in self.json]
-        
-        types = [x['type'] for x in self.json]
-        
-        docs_by_type = defaultdict(list)
-
-        for x in self.json:
-            cur_type = x['type']
-            docs_by_type[cur_type].append(x)
-
-        type_fields = {}
-
-        for key in docs_by_type:
-            docs = docs_by_type[key]
-            all_keys_list = [set(x.keys()) for x in docs]
-            all_unique_fields = sorted(set.union(*all_keys_list))
-            type_fields[key] = all_unique_fields
-        
-        self.docs_by_type = docs_by_type
-        self.type_fields = type_fields
-        self.unique_types = set(types)        
-        
-    def __repr__(self):
-        pv = [
-            'api',cld(self.api),
-             'docs',cld(self.docs),
-            'unique_types',self.unique_types]
-
-        return utils.property_values_to_string(pv)        
-
+        self.api = api
+        temp = {'items':json}
+        super(WorksSearchResult, self).__init__(temp)
+               
+        self.citems = FundersList(json,api)  
 
 class Work(ResponseObject):
     
@@ -464,6 +461,15 @@ class Work(ResponseObject):
     def get_prefix_info(self):
         pass        
     
+class JournalArticle(Work):
+    pass
+
+class WorksList(ExtendedList):
+    item_class = Funder
+    
+    def __init__(self,json,api):
+        super(WorksList, self).__init__(json,api)     
+    
         
 #----  Prefix
 #=================================================
@@ -495,158 +501,7 @@ class Prefix(ResponseObject):
         #TODO: Implement this
         pass
 
-    
-
-#----  Work Types
-#------------------------------------------------------------------------
-class BookSection(Work):
-    
-    def __init__(self,json,api):
-        super(BookSection, self).__init__(json,api)    
-
-class Monograph(Work):
-    
-    def __init__(self,json,api):
-        super(Monograph, self).__init__(json,api)     
-
-class Report(Work):
-    
-    def __init__(self,json,api):
-        super(Report, self).__init__(json,api)  
-        
-class BookTrack(Work):
-    
-    def __init__(self,json,api):
-        super(BookTrack, self).__init__(json,api)  
-
-class JournalArticle(Work):
-    
-    def __init__(self,json,api):
-        super(JournalArticle, self).__init__(json,api)  
-
-class BookPart(Work):
-    
-    def __init__(self,json,api):
-        super(BookPart, self).__init__(json,api)  
-
-class Other(Work):
-    
-    def __init__(self,json,api):
-        super(Other, self).__init__(json,api)  
-
-class Book(Work):
-    
-    def __init__(self,json,api):
-        super(Book, self).__init__(json,api)  
-
-class JournalVolume(Work):
-    
-    def __init__(self,json,api):
-        super(JournalVolume, self).__init__(json,api)  
-        
-class BookSet(Work):
-    
-    def __init__(self,json,api):
-        super(BookSet, self).__init__(json,api)  
-        
-class ReferencyEntry(Work):
-    
-    def __init__(self,json,api):
-        super(ReferencyEntry, self).__init__(json,api)  
-        
-class ProceedingsArticle(Work):
-    
-    def __init__(self,json,api):
-        super(ProceedingsArticle, self).__init__(json,api)  
-
-class UnhandledWork(Work):
-
-    def __init__(self,json,api):
-        super(UnhandledWork, self).__init__(json,api)   
-    
-    def _null(self):
-        #This will change, need to expand work by types
-        self.DOI = None
-        self.ISSN = None
-        self.URL = None
-    
-    @classmethod
-    def fields(cls):
-        #TODO: this is not done, will also need to split by type
-        return _l2d([
-        'DOI', None, 
-        'ISBN',None,
-        'ISSN', None, 
-        'URL', None,
-        'alternative_id',None,
-        'archive',None,
-        'article_number',None,
-        'assertion',None,
-        'author', None,
-        'container_title', None,
-        'created', None,  
-        'deposited', None,
-        'editor',None,
-        'funder',None,
-        'indexed', None,
-        'issue', None,
-        'issued', None,
-        'link',None,
-        'member', None,
-        'page', None,
-        'prefix', None, 
-        'published_online',None,
-        'published_print', None,
-        'publisher', None,
-        'reference_count', None,
-        'score', None,
-        'source', None,  
-        'subject', None, 
-        'subtitle', None, 
-        'title', _list_to_element,
-        'all_titles',lambda x,y: _get_alternate_field(x,'title'), #This is an example, we might not really use it
-        'type', None,
-        'update_policy',None,
-        'volume', None])
                 
-    def __repr__(self):
-        pv = ['ISSN',self.ISSN,
-                'title',self.title,
-                'URL',self.URL,
-                'subtitle',self.subtitle,
-                'container_title',self.container_title,
-                'prefix',self.prefix,
-                'type',self.type,
-                'page',self.page,
-                'subject',self.subject,
-                'score',self.score,
-                'member',self.member,
-                'created',self.created,
-                'volume',self.volume,
-                'published_print',self.published_print,
-                'indexed',self.indexed]
-
-        return utils.property_values_to_string(pv)
-
-#List is based on id, not label
-type_objects = {
-    'book-section':BookSection,
-    'monograph':Monograph,
-    'report':Report,
-    'book-track':BookTrack,
-    'journal-article':JournalArticle,
-    'book-part':BookPart,
-    'other':Other}
-
-def _create_work(json,api):
-    
-    work_type = json['type']
-    if work_type in type_objects:
-        fh = type_objects[work_type]
-        return fh(json,api)
-    else:
-        return UnhandledWork(json,api)        
-            
 def _l2d(input_list):
     #property-value pairs to dictionary
     keys = input_list[::2]

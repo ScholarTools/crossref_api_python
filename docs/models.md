@@ -9,3 +9,6 @@ Journals
 Member (e.g. Wiley-Blackwell)
 - has prefixes e.g. 10.2903, 10.1506, 10.1111 etc., although these may change ownership
 - has works
+
+Prefix
+- belongs to Member
