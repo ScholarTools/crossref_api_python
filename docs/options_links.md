@@ -8,6 +8,13 @@ https://github.com/CrossRef/rest-api-doc#parameters
 
 ## Filter
 
+Results from searches can be filtered via the following pattern:
+
+TODO
+
+Filters for endpoints are:
+- (Works)[# works-filters]
+
 ## Rows
 
 ## Offset
@@ -25,10 +32,10 @@ https://github.com/CrossRef/rest-api-doc#parameters
 
 # Works Filters
 - Source: https://github.com/CrossRef/rest-api-doc#filter-names
-- (options)[/works_filter.tsv]
+- [options](works_filter.tsv)
 - boolean: {t,true,1,f,false,0}
 - date: 
 
 # Works Field Queries
 - Source: https://github.com/CrossRef/rest-api-doc#works-field-queries
-- (options)[/works_field_queries.tsv]
+- [options](/works_field_queries.tsv)
