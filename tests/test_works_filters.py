@@ -3,12 +3,11 @@
 """
 """
 
-from crossref.filters import works_examples as we
-
-#we.__dict__.keys()
-
-reference_visibility
-
+#from crossref.filters import works_examples as we
 
 import crossref
-from crossref import errors
+
+api = crossref.API()
+
+temp = api.works(filter='has-funder:t')
+

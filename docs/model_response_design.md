@@ -23,6 +23,9 @@ Some fields are not safe for object access. This typically occurs with hyphens. 
 data = result['references-count']
 ```
 
+Currently no guarantee is made regarding the presence of a field in the json dictionary.
+#TODO: .get()
+
 ## Result Lists
 
 TODO: Describe this ...

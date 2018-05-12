@@ -161,6 +161,12 @@ class ResponseObject(object):
         return display_class(self,temp)
     
 def _short_string(value):
+    """
+    This is used by the response object to present a short
+    value string for a given key
+    """
+    
+    #TODO: Expose this somehow ...
     MAX_LENGTH = 30 #default was a bit long for td
     disp_string = str(value)
     if len(disp_string) < MAX_LENGTH:
@@ -174,6 +180,28 @@ def _short_string(value):
     else:
         s = str(value)
         return td(s,max_length=MAX_LENGTH)  
+
+class Facets(ResponseObject):
+    
+    other_fields_for_display = ['api']
+
+    
+    def __init__(self,json,api):
+        self.api = api
+        super(Facets, self).__init__(json)   
+        
+        #We might eventually want more logic here
+        #For example, the ISSNs are a bit awkward:
+        """
+        {'value-count': 100,
+ 'values': {'http://id.crossref.org/issn/0001-6268': 19,
+  'http://id.crossref.org/issn/0002-9378': 52,
+  'http://id.crossref.org/issn/0003-2999': 28,
+  'http://id.crossref.org/issn/0003-4932': 25,
+  'http://id.crossref.org/issn/0003-9993': 21,
+  'http://id.crossref.org/issn/0006-8993': 40,
+        """
+        
 
 #---- Types
 #============================================
@@ -219,7 +247,11 @@ class FundersSearchResult(ResponseObject):
         #This class returns only the items as a list (json)
         #rather than as a dict with meta data and the results
         self.citems = FundersList(temp['items'],api)  
-        
+ 
+def funder_single(json,api):
+    #Anything else?
+    return Funder(json['message'],api)
+       
 class Funder(ResponseObject):
 
     """
@@ -258,6 +290,10 @@ class JournalSearchResult(ResponseObject):
         #This class returns only the items as a list (json)
         #rather than as a dict with meta data and the results
         self.citems = JournalsList(temp['items'],api)        
+
+def journal_single(json,api):
+    #Anything else?
+    return Journal(json['message'],api)  
 
 class Journal(ResponseObject):
 
@@ -338,7 +374,11 @@ class MembersSearchResult(ResponseObject):
         temp = {'items':json['message']['items']}
         super(MembersSearchResult, self).__init__(temp)
         self.citems = MembersList(temp['items'],api)    
-        
+
+
+def member_single(json,api):
+    #Anything else?
+    return Member(json['message'],api)        
        
 class Member(ResponseObject):
     
@@ -398,15 +438,35 @@ class WorksSearchResult(ResponseObject):
       
     """
     
-    other_fields_for_display = ['api','citems','message_version']
+    other_fields_for_display = ['api','citems','message_version','raw']
     
     
     def __init__(self,json,api):
+        self.raw = json
         self.api = api
         self.message_version = json['message-version']
-        temp = {'items':json['message']['items']}
+        facets = json['message'].get('facets')
+        
+        #Apparently empty dictionaries are false
+        if facets is None or not facets:
+            temp = {'items':json['message']['items']}
+        else:
+            temp = {'items':json['message']['items'],
+                    'facets':facets,
+                    'cfacets':Facets(facets,api)}
+
         super(WorksSearchResult, self).__init__(temp)
         self.citems = WorksList(temp['items'],api) 
+        
+        #TODO: support parsed facets ...
+        #'issn'
+        #=> 'http://id.crossref.org/issn/0002-9378': 52
+        #=> 0002-9378 : 52
+
+def work_single(json,api):
+    #We just pass on the message ...
+    return Work(json['message'],api)
+    
 
 class Work(ResponseObject):
     
@@ -431,9 +491,7 @@ class Work(ResponseObject):
 
     """    
     
-    def __init__(self,json,api):
-        #The api isn't used yet but is meant to allow further calls
-        #in the methods
+    def __init__(self,json,api):        
         self.api = api
         super(Work, self).__init__(json)
         
@@ -464,6 +522,10 @@ class PrefixList(ResponseObject):
 
         return utils.property_values_to_string(pv)  
 
+def prefix_single(json,api):
+    #Anything else?
+    return Prefix(json['message'],api)
+
 class Prefix(ResponseObject):
     
     """
@@ -480,7 +542,7 @@ class Prefix(ResponseObject):
         #TODO: Implement this
         pass
 
-                
+"""                
 def _l2d(input_list):
     #property-value pairs to dictionary
     keys = input_list[::2]
@@ -488,9 +550,7 @@ def _l2d(input_list):
     return {k:v for k,v in zip(keys,values)}
     
 def _list_to_element(self,name):
-    """
-    This is useful in cases in which we get a list which usually only has 1 element
-    """
+    #This is useful in cases in which we get a list which usually only has 1 element
     value = self.json.get(name)
     if value is None:
         return None
@@ -499,3 +559,4 @@ def _list_to_element(self,name):
     
 def _get_alternate_field(self,alternate_name):
     return self.json.get(alternate_name)
+    """

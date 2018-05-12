@@ -3,6 +3,8 @@
 """
 https://github.com/CrossRef/rest-api-doc#sorting
 
+from crossref.search_options import sort
+
 """
 
 score = 'score'

@@ -2,8 +2,12 @@
 """
 Next Goals
 -----------------------
-- reimplement query options
-- support journal type breakout on return type
+- cursor
+- next
+- support field queries
+- add on ability to change print length
+- x-rate limits
+
 
 Other Links
 -----------------------
@@ -19,31 +23,13 @@ Other implementations:
     https://github.com/fabiobatalha/crossrefapi    
 
     
-Endpoint List
------------------------
-/funders - returns a list of all funders in the Funder Registry
-/journals
-/liceneses - returns a list of all Crossref members (mostly publishers)
-/members - returns a list of all Crossref members (mostly publishers)
-/types - returns a list of valid work types
-/works
-
-
-
-
-Secondary Endpoint List
------------------------
-/member
-/types/{type_id}
-
-/works/{doi} 
-
 """
 
 #TODO: Change these to endpoint alphabetical order
 
 import crossref
 from crossref import errors
+from crossref import search_keys as sk
 
 api = crossref.API(debug=True)
 
@@ -56,11 +42,15 @@ temp = api.funders()
 
 temp = api.funders(query='National Cancer Institute')
 
+#TODO: This doesn't work, can't sample 
+#temp = api.funders(n_random=10)
+
 #---- /journals
 #===========================================
 temp = api.journals()
 
-t#emp = api.journals()
+#TODO: This shouldn't make it to the request stage but should fail locally
+#temp = api.journals('1433-3023')
 
 #---- /licenses
 #===========================================
@@ -71,6 +61,8 @@ temp = api.licenses(query='creative')
 #---- /members
 #===========================================
 temp = api.members()
+
+temp = api.members(query='Elsevier')
 
 #TODO: Search filter testing
 
@@ -91,6 +83,18 @@ temp = api.works(filter='has-references:1')
 temp = api.works(filter='has-funder:t')
 
 temp = api.works(filter='funder:100000054')
+
+temp = api.works(n_random=10,query='sacral neuromodulation')
+
+temp1 = api.works(n_per_page=10,select='DOI')
+
+temp2 = api.works(n_per_page=10,select='DOI',offset=5)
+
+temp = api.works(facet='issn:100',query='sacral neuromodulation')
+
+temp = api.works(filter='issn:1873-5584')
+
+temp = api.works(query='urinary urgency',cursor='*')
 
 #yyyy
 #yyyy-MM
@@ -118,8 +122,19 @@ temp = api.works(_filter='from-created-date:2018-01-15')
 #---- ID tests
 #==========================================================
 
-#---- /member/{member_id}
-#========================================
+#---- /funders/{funder_id}
+#==========================================
+temp = api.funder_info('501100000165')
+
+#---- /journals/{journal_id}
+#==========================================
+temp = api.journal_info('1433-3023')
+
+#Resource not found
+temp = api.journal_info('1873-5584')
+
+#---- /members/{member_id}
+#==========================================
 temp = api.member_info('311')
 
 #---- /prefixes/{owner_prefix}
@@ -128,10 +143,10 @@ temp = api.prefix_info("10.1002")
 
 temp = api.prefix_info("10.1016")
 
-
-
 #---- /types/{type_id}
 #===========================================
+#This is pretty useless since getting everything
+#is so small
 temp = api.work_type_info('journal')
 
 #---- /works/{doi}
@@ -151,8 +166,7 @@ temp = api.doi_info("10.1002/nau.1930090206")
 #Valid DOI - no 'reference' key
 temp = api.doi_info("10.1016/j.fbr.2012.01.001")
 
+#Invalid DOI with cleaning
+temp = api.doi_info('j.apsusc.2018.04.237')
 
-
-#/journals
-
-temp = api.search_journals()
+temp = api.doi_info('10.1016/j.apsusc.2018.04.237')

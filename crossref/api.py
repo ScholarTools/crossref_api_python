@@ -14,7 +14,6 @@ Status:
     - own class
     - retrieve new options and filter from the class
 5) Works models are not completely implemented
-6) Clean up work response model, why are we cleaning dict keys?????
 
 
 /funders/{funder_id}	returns metadata for specified funder and its suborganizations
@@ -52,6 +51,7 @@ import requests
 
 #Local Imports
 #------------------------
+from . import search_values as sv
 from . import errors
 from . import models
 from . import utils
@@ -61,226 +61,14 @@ display_class = utils.display_class
 try:
     from . import user_config
 except:
-    raise Exception("User Config is required for running the codes")
+    raise Exception("User Config is required for running the API")
     
-class FieldQueries(object):
-    """
-    https://github.com/CrossRef/rest-api-doc#works-field-queries
-    
-    JAH: This is not yet setup/tested
-    
-    Attributes
-    ----------
-    title
-    container-title
-    author
-    editor
-    chair
-    translator
-    contributor
-    bibliographic
-    affiliation
-    
-    """
-
-    def __init__(self):
-
-        self.title = None
-        self.container_title = None
-        self.author = None
-        self.editor = None
-        self.chair = None
-        self.translator = None
-        self.contributor = None
-        self.bibliographic = None
-        self.affiliation = None
         
 #/works filters
 #https://github.com/CrossRef/rest-api-doc#filter-names
 
-#I'm not sure what I want to do with this ...    
-class Filter(object):
-    """
-    https://github.com/CrossRef/rest-api-doc#filter-names
-    
-    filter={filter_name}:{value}	filter results by specific fields
-    """
-    
-    def __init__(self):
-        pass
-
-"""
-has-funder		metadata which includes one or more funder entry
-funder	{funder_id}	metadata which include the {funder_id} in FundRef data
-prefix	{owner_prefix}	metadata belonging to a DOI owner prefix {owner_prefix} (e.g. 10.1016 )
-member	{member_id}	metadata belonging to a CrossRef member
-from-index-date	{date}	metadata indexed since (inclusive) {date}
-until-index-date	{date}	metadata indexed before (inclusive) {date}
-from-deposit-date	{date}	metadata last (re)deposited since (inclusive) {date}
-until-deposit-date	{date}	metadata last (re)deposited before (inclusive) {date}
-from-update-date	{date}	Metadata updated since (inclusive) {date}. Currently the same as from-deposit-date.
-until-update-date	{date}	Metadata updated before (inclusive) {date}. Currently the same as until-deposit-date.
-from-created-date	{date}	metadata first deposited since (inclusive) {date}
-until-created-date	{date}	metadata first deposited before (inclusive) {date}
-from-pub-date	{date}	metadata where published date is since (inclusive) {date}
-until-pub-date	{date}	metadata where published date is before (inclusive) {date}
-has-license		metadata that includes any <license_ref> elements.
-license.url	{url}	metadata where <license_ref> value equals {url}
-license.version	{string}	metadata where the <license_ref>'s applies_to attribute is {string}
-license.delay	{integer}	metadata where difference between publication date and the <license_ref>'s start_date attribute is <= {integer} (in days)
-has-full-text		metadata that includes any full text <resource> elements.
-full-text.version	{string}	metadata where <resource> element's content_version attribute is {string}.
-full-text.type	{mime_type}	metadata where <resource> element's content_type attribute is {mime_type} (e.g. application/pdf).
-public-references		metadata where publishers allow references to be distributed publically. [^*]
-has-references		metadata for works that have a list of references
-has-archive		metadata which include name of archive partner
-archive	{string}	metadata which where value of archive partner is {string}
-has-orcid		metadata which includes one or more ORCIDs
-orcid	{orcid}	metadata where <orcid> element's value = {orcid}
-issn	{issn}	metadata where record has an ISSN = {issn}. Format is xxxx-xxxx.
-type	{type}	metadata records whose type = {type}. Type must be an ID value from the list of types returned by the /types resource
-directory	{directory}	metadata records whose article or serial are mentioned in the given {directory}. Currently the only supported value is doaj.
-doi	{doi}	metadata describing the DOI {doi}
-updates	{doi}	metadata for records that represent editorial updates to the DOI {doi}
-is-update		metadata for records that represent editorial updates
-has-update-policy		metadata for records that include a link to an editorial update policy
-container-title		metadata for records with a publication title exactly with an exact match
-publisher-name		metadata for records with an exact matching publisher name
-category-name		metadata for records with an exact matching category label
-type-name		metadata for records with an exacty matching type label
-award.number	{award_number}	metadata for records with a matching award nunber. Optionally combine with award.funder
-award.funder	{funder doi or id}	metadata for records with an award with matching funder. Optionally combine with award.number
-assertion-group		metadata for records with an assertion in a particular group
-assertion		metadata for records with a particular named assertion
-affiliation		metadata for records with at least one contributor with the given affiliation
-has-affiliation		metadata for records that have any affiliation information
-alternative-id		metadata for records with the given alternative ID, which may be a publisher-specific ID, or any other identifier a publisher may have provided
-article-number		metadata for records with a given article number
-"""
 
 
-class QueryOptions(object):
-    """
-    https://github.com/CrossRef/rest-api-doc#parametershing besides 
-    
-    How much of this works for non-works endpoints
-    
-    Attributes
-    ----------
-    query :
-        Uses DisMax queries
-        TODO: Add documentation on how to use
-        e.g.
-            'renear+-ontologies' #renear but not ontologies
-    field_queries : list
-        These should field=value        
-    rows : int
-        Number of results per page
-        #TODO might rename or alias
-    offset :
-    sample :
-        If specified, this return N random results. This can be useful 
-        for testing.
-    sort :
-        https://github.com/CrossRef/rest-api-doc#sorting
-        - score
-        - relevance - 'same as score'
-        - updated - currently the same as 'deposited'
-        - deposited
-        - indexed
-        - published
-        - published-print
-        - published-online
-        - issued
-        - is-referenced-by-count
-        - references-count
-    order :
-        - asc - ascending order
-        - desc - descending order
-    facet : 
-        "Facet counts can be retrieved by enabling faceting; facet=t (or 1, 
-        true). Facet counts give counts per field value for an entire result 
-        set" => I'm not sure what this means
-    """
-    
-    
-    """
-    We use setattr so that only user specified query parameters are passed
-    in a query, rather than having defaults for each parameter that are then
-    passed to the query each time.
-    """
-
-    fields = ['query','rows','offset','sample','sort','order','facet']
-
-    SORT_OPTIONS = ['relevance','updated','indexed','published',
-                    'published-print'
-                    'published-online','issued','is-referenced-by-count',
-                    'references-count']
-
-    def __init__(self):
-        self.__dict__['query_params'] = {}
-
-    def _null(self):
-        self.query = None
-        self.field_queries = None
-        self.rows = None
-        self.offset = None
-        self.sample = None
-        self.sort = None
-        self.order = None
-        self.facet = None
-        
-    def get_query_dict(self):
-        return self.query_params
-
-    def __getattr__(self,name):
-        if name in self.fields:
-            #TODO: Does .get work? or does it call this
-            #recursively?????
-            if name in self.query_params:
-                return self.query_params[name]
-            else:
-                return None
-        else:
-            raise AttributeError
-
-        
-    def __setattr__(self,name,value):
-        if name in self.fields:
-            self.query_params[name] = value
-        else:
-            raise Exception('Unable to set attribute: %s'%name)
-    
-    def __repr__(self): 
-        pv = ['SORT_OPTIONS',td(self.SORT_OPTIONS),
-              'sort',self.sort,
-              'field_queries',self.field_queries,
-              'query',self.query,
-            'rows',self.rows,
-            'offset',self.offset,
-            'sample',self.sample,
-            
-            'order',self.order,
-            'facet',self.facet]
-
-        return utils.property_values_to_string(pv)
-
-
-"""
-query	limited DisMax query terms
-
-rows={#}	results per per page
-offset={#}	result offset
-sample={#}	return random N results
-sort={#}	sort results by a certain field
-
-    score or relevance	  Sort by relevance score
-    updated	Sort by date of most recent change to metadata. Currently the same as deposited.
-    deposited	Sort by time of most recent deposit
-    indexed	Sort by time of most recent index
-    published	Sort by publication date
-
-"""
 
 class API(object):
     
@@ -297,17 +85,80 @@ class API(object):
     
     """
     
+    
+    search_values = {}
+    
+    #https://github.com/CrossRef/rest-api-doc#parameters
+    """
+    search_options = {
+            'filter':'test',
+            'n_rows':'max # of results to return per request',
+            'n_random':'Return this # of random values',
+            'offset':'Return starting at a given position, max=10k',
+            'query':'Search terms, TODO: provide link to examples',
+            'sort_by':'A field by which to sort the results, see search_options.sort',
+            'order':'How to order the results, either "asc" (ascending) or "desc" (descending)',
+            'facet':'test',
+            'cursor':'test',
+            'select':'Fields '}
+    """
+    
+    search_keys = ['cursor',
+         'facet',
+         'filter',
+         'n_rows',
+         'n_random',
+         'offset',
+         'order',
+         'query',
+         'select',
+         'sort_by']
+    
+    #search_examples = {}
+    
+
+    
+    
     def __init__(self,debug=False):
         
         self.debug = debug
         self.session = requests.Session()
         self._work_types = None
+        self.last_error = None
      
-    @staticmethod    
-    def search_fields():
+ 
+    def get_search_descriptions(key_name):
         pass
+    
+    def get_search_examples(key_name):
+        pass
+    
+    @staticmethod
+    def get_search_options(key_name):
+        if key_name is 'cursor':
+            pass
+        elif key_name is 'facet':
+            pass
+        elif key_name is 'filter':
+            pass
+        elif key_name is 'n_rows':
+            return None
+        elif key_name is 'n_random':
+            return None
+        elif key_name is 'offset':
+            return None
+        elif key_name is 'order':
+            return sv.order
+        elif key_name is 'query':
+            return None
+        elif key_name is 'select':
+            print('select')
+        elif key_name is 'sort_by':
+            return sv.sort
+            pass
+            
         
-    def _make_get_request(self,url,object_fh,params,return_type):
+    def _make_get_request(self,url,object_fh,params=None,return_type=None):
     
         if params is None:
             params = {}
@@ -350,7 +201,8 @@ class API(object):
         
         json_data = r.json()
         if json_data['status'] == 'failed':
-            raise Exception(json_data['message'])
+            self.last_error = json_data
+            raise errors.CrossrefError(json_data['message'])
             
         #temp = ResponseMessageInfo(j,is_list)
         #object_json = temp.json
@@ -362,10 +214,12 @@ class API(object):
         """     
         
         #TODO: return_type
-        
-        return object_fh(json_data,self)
+        if return_type is 'json':
+            return json_data
+        else:
+            return object_fh(json_data,self)
     
-    def _options_to_dict(self,filter=None,n_per_page=None,n_random=None,
+    def _options_to_dict(self,filter=None,n_rows=None,n_random=None,
                      offset=None,query=None,sort_by=None,order=None,
                      facet=None,cursor=None,select=None):
         #https://github.com/CrossRef/rest-api-doc#parameters
@@ -379,7 +233,7 @@ class API(object):
                 'offset':offset,
                 'order':order,
                 'query':query,
-                'rows':n_per_page,
+                'rows':n_rows,
                 'select':select,
                 'sample':n_random,
                 'sort':sort_by}
@@ -402,57 +256,29 @@ class API(object):
         """
                 
         return params
-    
-    def _make_search_request(self,url,object_fh,options=None,_filter=None):
-
-        """
-        Parameters
-        ----------
-        url :
-        object_fh : Function handle to result object
-        options : 
-        _filter :
-        TODO: We could also allow options to be a dict rather than forcing the object creation
-        """
-                
-        if options is not None:
-            params = options.get_query_dict()
-        else:
-            params = {}
             
-        if _filter is not None:
-            #TODO: This will need to changed
-            #string
-            #list
-            #object?
-            params['filter'] = _filter
-            
-               
-        #TODO: We could make a post request instead, this might be preferable
-        #object_fh, params=None, response_params=None,is_list=False
-        return self._make_get_request(url,object_fh,params=params,is_list=True)
-        
-    def funders(self,filter=None,n_per_page=None,n_random=None,
+    def funders(self,filter=None,n_rows=None,
                      offset=None,query=None,sort_by=None,order=None,
                      facet=None,cursor=None,return_type=None):
         
         """
+        n_random not supported
         select not supported
         """
         
-        params = self._options_to_dict(filter=filter,n_per_page=n_per_page,
-             n_random=n_random,offset=offset,query=query,
+        params = self._options_to_dict(filter=filter,n_rows=n_rows,
+             n_random=None,offset=offset,query=query,
              sort_by=sort_by,order=order,facet=facet,cursor=cursor,
              select=None)
                 
         url = self.BASE_URL + 'funders'
         return self._make_get_request(url,models.FundersSearchResult,params,return_type)
     
-    def journals(self,filter=None,n_per_page=None,n_random=None,
+    def journals(self,filter=None,n_rows=None,n_random=None,
                      offset=None,query=None,sort_by=None,order=None,
                      facet=None,cursor=None,return_type=None):
         
-        params = self._options_to_dict(filter=filter,n_per_page=n_per_page,
+        params = self._options_to_dict(filter=filter,n_rows=n_rows,
              n_random=n_random,offset=offset,query=query,
              sort_by=sort_by,order=order,facet=facet,cursor=cursor,
              select=None)
@@ -460,7 +286,7 @@ class API(object):
         url = self.BASE_URL + 'journals'
         return self._make_get_request(url,models.JournalSearchResult,params,return_type)
     
-    def licenses(self,filter=None,n_per_page=None,n_random=None,
+    def licenses(self,filter=None,n_rows=None,n_random=None,
                      offset=None,query=None,sort_by=None,order=None,
                      facet=None,cursor=None,select=None,return_type=None):
         
@@ -474,7 +300,7 @@ class API(object):
         .work-count
         """
         
-        params = self._options_to_dict(filter=filter,n_per_page=n_per_page,
+        params = self._options_to_dict(filter=filter,n_rows=n_rows,
              n_random=n_random,offset=offset,query=query,
              sort_by=sort_by,order=order,facet=facet,cursor=cursor,
              select=None)
@@ -483,12 +309,12 @@ class API(object):
         #return self._make_search_request(url,models.LicenseSearchResult,options,_filter)
         return self._make_get_request(url,models.LicenseSearchResult,params,return_type)    
     
-    def members(self,filter=None,n_per_page=None,n_random=None,
+    def members(self,filter=None,n_rows=None,n_random=None,
                      offset=None,query=None,sort_by=None,order=None,
                      facet=None,cursor=None,select=None,return_type=None):
         
         
-        params = self._options_to_dict(filter=filter,n_per_page=n_per_page,
+        params = self._options_to_dict(filter=filter,n_rows=n_rows,
              n_random=n_random,offset=offset,query=query,
              sort_by=sort_by,order=order,facet=facet,cursor=cursor,
              select=select)
@@ -496,7 +322,7 @@ class API(object):
         url = self.BASE_URL + 'members/'
         return self._make_get_request(url,models.MembersSearchResult,params,return_type)
     
-    def works(self,filter=None,n_per_page=None,n_random=None,
+    def works(self,filter=None,n_rows=None,n_random=None,
                      offset=None,query=None,sort_by=None,order=None,
                      facet=None,cursor=None,select=None,return_type=None):
         """
@@ -518,7 +344,7 @@ class API(object):
         TODO: Make sure the model methods show in the display ...
         """
         
-        params = self._options_to_dict(filter=filter,n_per_page=n_per_page,
+        params = self._options_to_dict(filter=filter,n_rows=n_rows,
              n_random=n_random,offset=offset,query=query,
              sort_by=sort_by,order=order,facet=facet,cursor=cursor,
              select=select)
@@ -528,6 +354,9 @@ class API(object):
         return self._make_get_request(url,models.WorksSearchResult,params,return_type)
 
     def work_types(self):
+        """
+        
+        """
         
         if self._work_types is None:
             url = self.BASE_URL + 'types'
@@ -535,7 +364,7 @@ class API(object):
 
         return self._work_types
     
-    def doi_info(self,doi,**kwargs):
+    def doi_info(self,doi):
         """
         
         Returns
@@ -550,11 +379,6 @@ class API(object):
         c = crossref.API()
         m = c.doi_meta('10.1109/TNSRE.2011.2163145')
         
-        
-        TODO : are there any valid kwargs? I don't think there are. This
-        can probably be removed (oops, maybe version?)
-        
-        
         """
         
         doi = _clean_doi(doi)
@@ -562,7 +386,7 @@ class API(object):
         url = self.BASE_URL + 'works/' + doi
         
         try:
-            return self._make_get_request(url,models.Work)
+            return self._make_get_request(url,models.work_single)
         except errors.RequestError:
             #TODO: Check for 404
             #last_response.status_code
@@ -574,29 +398,27 @@ class API(object):
         
         #return self._make_get_request(url,models.Work,kwargs)
         
-    def prefix_info(self,prefix_id):
+    def funder_info(self,funder_id):
         """
-        Returns metadata for the DOI owner prefix
-        
-        Returns
-        -------
-        crossref.models.Prefix
-        
-        Implements
-        ----------
-        /prefixes/{owner_prefix}
         
         Example Data
         ------------
-        <class 'crossref.models.Prefix'>:
-            member: http://id.crossref.org/member/311
-              name: Wiley-Blackwell
-            prefix: http://id.crossref.org/prefix/10.1002
+
         """
         
-        url = self.BASE_URL + 'prefixes/' + prefix_id
+        url = self.BASE_URL + 'funders/' + funder_id
+        return self._make_get_request(url,models.funder_single)
+
+    def journal_info(self,journal_id):
+        """
         
-        return self._make_get_request(url,models.Prefix)
+        Example Data
+        ------------
+
+        """
+        
+        url = self.BASE_URL + 'journals/' + journal_id
+        return self._make_get_request(url,models.journal_single)
     
     def member_info(self,member_id):
         """
@@ -619,10 +441,32 @@ class API(object):
         """
         
         url = self.BASE_URL + 'members/' + member_id
-        return self._make_get_request(url,models.Member)
+        return self._make_get_request(url,models.member_single)
     
 
-    
+    def prefix_info(self,prefix_id):
+        """
+        Returns metadata for the DOI owner prefix
+        
+        Returns
+        -------
+        crossref.models.Prefix
+        
+        Implements
+        ----------
+        /prefixes/{owner_prefix}
+        
+        Example Data
+        ------------
+        <class 'crossref.models.Prefix'>:
+            member: http://id.crossref.org/member/311
+              name: Wiley-Blackwell
+            prefix: http://id.crossref.org/prefix/10.1002
+        """
+        
+        url = self.BASE_URL + 'prefixes/' + prefix_id
+        
+        return self._make_get_request(url,models.prefix_single)    
 
     
     def work_type_info(self,type_id):
@@ -639,54 +483,6 @@ class API(object):
         return self._make_get_request(url,models.pass_through)
 
         
-        
-    
-class ResponseMessageInfo(object):
-
-    """
-    Attributes
-    ----------
-    
-    
-    """
-    
-    
-    def __init__(self,json,is_list):            
-        self.message_type = json['message-type']
-        self.message_version = json['message-version']
-        self.status = json['status'] #ok
-        temp = json['message']
-        self.json = utils.clean_dict_keys(temp)
-        self.is_list = is_list
-        if is_list:
-            self.total_results = self.json['total_results']
-            
-            #These weren't present with types-list 
-            #Where is that documented?????
-            self.query = self.json.get('query')
-            self.items_per_page = self.json.get('items_per_page')
-            self.facets = self.json.get('facets')
-            #This is a bit sloppy, the message actually contains all the
-            #info above and items, which we'll then parse out in the main
-            #class ...
-            self.json = self.json['items']
-
-    def __repr__(self):
-        #TODO: Set this up like it looks in Mendeley
-        pv = ['is_list',self.is_list,
-              'message_type',self.message_type,
-                'message_version',self.message_version,
-                'status',self.status,
-                'json',td(self.json)]
-                
-        if self.is_list:
-            pv += ['total_results',self.total_results,
-                'query',self.query,
-                'items_per_page',self.items_per_page,
-                'facets',self.facets]
-        
-        return utils.property_values_to_string(pv)
-
 def _validate_config(user_config):
     
     #1) Validate email
