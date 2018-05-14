@@ -25,8 +25,6 @@ Other implementations:
     
 """
 
-#TODO: Change these to endpoint alphabetical order
-
 import crossref
 from crossref import errors
 from crossref import search_keys as sk
@@ -42,7 +40,13 @@ temp = api.funders()
 
 temp = api.funders(query='National Cancer Institute')
 
+temp = api.funders(query='University',filter='location:United Kingdom')
+
+temp = api.funders(filter='location:Ethiopia')
+
+
 #TODO: This doesn't work, can't sample 
+#Build in failure test
 #temp = api.funders(n_random=10)
 
 #---- /journals
@@ -81,6 +85,8 @@ temp = api.works(filter='type:book-section')
 temp = api.works(filter='has-references:1')
 
 temp = api.works(filter='has-funder:t')
+
+temp = api.works(filter='has-relation:1')
 
 temp = api.works(filter='funder:100000054')
 

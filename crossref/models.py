@@ -502,7 +502,7 @@ class JournalArticle(Work):
     pass
 
 class WorksList(ExtendedList):
-    item_class = Funder
+    item_class = Work
     
     def __init__(self,json,api):
         super(WorksList, self).__init__(json,api)     

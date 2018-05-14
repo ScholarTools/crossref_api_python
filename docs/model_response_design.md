@@ -8,23 +8,33 @@ Most (all?) endpoints return JSON. Rather than return JSON directly this code ba
 
 ## Usage Notes
 
-Eventually I'd like to include a switch where the raw JSON data are returned directly from the HTTP request (or even the raw text). Currently if you would like to work with the raw json you must do the following:
+If you would like to work with the raw json you must do the following:
 
 ```python
 #Get the underlying JSON data that was returned
 data = result.json
 ```
 
+Alternatively, the works endpoint supports return_type='json', which returns the raw message. (TODO: The other endpoints should support this as well)
+
+```
+>>> result = api.works(return_type='json')
+>>> result.keys()
+dict_keys(['status', 'message-type', 'message-version', 'message'])
+```
+
 Some fields are not safe for object access. This typically occurs with hyphens. In this case dictionary like access must be used.
 
 ```python
 #Get a field that is not safe to access with dot notation
-#We can't do data = result.references-count !
+#We can't do data = result.references-count!
 data = result['references-count']
 ```
 
-Currently no guarantee is made regarding the presence of a field in the json dictionary.
-#TODO: .get()
+Currently no guarantee is made regarding the presence of a field in the returned objects. Like a dictionary, the get method is supported
+```python
+
+```
 
 ## Result Lists
 

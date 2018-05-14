@@ -2,7 +2,8 @@
 """
 """
 
-class CrossrefError(Exception):
+class CrossrefAPIError(Exception):
+    """User errors in usage of the Crossref API"""
     pass
 
 class RequestError(Exception):

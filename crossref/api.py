@@ -158,20 +158,21 @@ class API(object):
             pass
             
         
-    def _make_get_request(self,url,object_fh,params=None,return_type=None):
+    def _make_get_request(self,url,object_fh,params=None,return_type=None,extras=None):
+        
+        """
+        This function is the entry point for making requests.
+        
+        """
     
         if params is None:
             params = {}
-        #else:
-        #    #????? - what are we doing here? - only including ones with values
-        #    #Does requests do this for us?
-        #    if PY2:
-        #        params = dict((k, v) for k, v in params.iteritems() if v)
-        #    else:
-        #       params = dict((k, v) for k, v in params.items() if v)
+            
+        if extras is None:
+            extras = {}
      
-
-
+        #Polite Pool Work
+        #---------------------------------------
         #Example          
         #GroovyBib/1.1 (https://example.org/GroovyBib/; mailto:GroovyBib@example.org) BasedOnFunkyLib/1.4.
 
@@ -183,13 +184,16 @@ class API(object):
         
         headers = {'user-agent': ua_str}
         
-        r1 = requests.Request('GET',url,params=params,headers=headers)
-        prepped = r1.prepare()
-        r = self.session.send(prepped)
         
-        #r = self.session.get(url,params=params,headers=headers)      
+        #TODO Check params and # of results ...
+        
+        
+        
+        #The params get passed directly
+        r = self.session.get(url,params=params,headers=headers)      
 
-        self.last_prepped = prepped
+        #These are debug only and should not be used for anything else
+        #-------------------------------------------------------------
         self.last_url = url
         self.last_response = r     
         self.last_params = params     
@@ -202,11 +206,9 @@ class API(object):
         json_data = r.json()
         if json_data['status'] == 'failed':
             self.last_error = json_data
-            raise errors.CrossrefError(json_data['message'])
+            raise errors.CrossrefAPIError(json_data['message'])
             
-        #temp = ResponseMessageInfo(j,is_list)
-        #object_json = temp.json
-            
+        #Example error    
         """
         {'status': 'failed', 'message-type': 'validation-failure', 
         'message': [{'value': 'sample', 
