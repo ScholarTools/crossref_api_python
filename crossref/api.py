@@ -5,17 +5,6 @@ https://github.com/CrossRef/rest-api-doc/blob/master/rest_api.md
 """
 
 """
-7/30/2016
-Status:
-1) Lots of end points are not implemented
-2) Filter is not implemented
-3) Queries on works not implemented
-4) Works should probably be refactored
-    - own class
-    - retrieve new options and filter from the class
-5) Works models are not completely implemented
-
-
 /funders/{funder_id}	returns metadata for specified funder and its suborganizations
 /prefixes/{owner_prefix}	returns metadata for the DOI owner prefix
 /members/{member_id}	returns metadata for a CrossRef member
@@ -51,7 +40,7 @@ import requests
 
 #Local Imports
 #------------------------
-from . import search_values as sv
+#from . import search_values as sv
 from . import errors
 from . import models
 from . import utils
@@ -119,12 +108,23 @@ class API(object):
 
     
     
-    def __init__(self,debug=False):
+    def __init__(self,debug=False,session=None):
+        
+        """
+        Parameters
+        ----------
+        
+        """
         
         self.debug = debug
-        self.session = requests.Session()
+        if session is None:
+            self.session = requests.Session()
+        else:
+            self.session = session
         self._work_types = None
         self.last_error = None
+        self.rate_limit = 50
+        self.rate_limit_interval = 1
      
  
     def get_search_descriptions(key_name):
@@ -187,10 +187,21 @@ class API(object):
         
         #TODO Check params and # of results ...
         
+        #TODO: Implement rate limits ...
         
         
         #The params get passed directly
-        r = self.session.get(url,params=params,headers=headers)      
+        r = self.session.get(url,params=params,headers=headers)     
+        
+
+        #Update limits
+        #---------------------        
+        headers = r.headers
+        self.rate_limit = headers.get('X-Rate-Limit-Limit',50)
+        self.rate_limit_interval = int(headers.get('X-Rate-Limit-Interval','1s')[:-1])
+        
+        #TODO: Implement ...https://konghq.com/blog/how-to-design-a-scalable-rate-limiting-algorithm/
+        
 
         #These are debug only and should not be used for anything else
         #-------------------------------------------------------------

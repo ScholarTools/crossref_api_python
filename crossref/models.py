@@ -194,12 +194,12 @@ class Facets(ResponseObject):
         #For example, the ISSNs are a bit awkward:
         """
         {'value-count': 100,
- 'values': {'http://id.crossref.org/issn/0001-6268': 19,
-  'http://id.crossref.org/issn/0002-9378': 52,
-  'http://id.crossref.org/issn/0003-2999': 28,
-  'http://id.crossref.org/issn/0003-4932': 25,
-  'http://id.crossref.org/issn/0003-9993': 21,
-  'http://id.crossref.org/issn/0006-8993': 40,
+         'values': {'http://id.crossref.org/issn/0001-6268': 19,
+          'http://id.crossref.org/issn/0002-9378': 52,
+          'http://id.crossref.org/issn/0003-2999': 28,
+          'http://id.crossref.org/issn/0003-4932': 25,
+          'http://id.crossref.org/issn/0003-9993': 21,
+          'http://id.crossref.org/issn/0006-8993': 40,
         """
         
 

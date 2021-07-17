@@ -1,7 +1,108 @@
 # -*- coding: utf-8 -*-
 """
 #TODO: break out display utils to another module
+
+This could probably be made private since the user doesn't really need
+to call it
+
+from crossref import utils
 """
+
+import os.path as path
+
+#I'm not thrilled about including this. It might change.
+import pandas
+
+
+def test_options(fcn,params,lead_in_text,ref_table):
+    pass
+
+class OptionComparison():
+    
+    def __init__(self,local_ref_values,server_new_values):
+        """
+        Parameters
+        ----------
+        local_ref_values : [str]
+            Reference values are the values known to the program.
+        server_new_values : [str]
+            New values are the values from the server that may be different
+            from the local reference values
+        """
+        
+        ref_set = set(local_ref_values)
+        new_set = set(server_new_values)
+        
+        self.local_ref_only = ref_set.difference(new_set)
+        self.new_only = new_set.difference(ref_set)
+        self.in_both = ref_set.intersection(new_set)
+        
+        
+    def __repr__(self):
+        #TODO: This needs to be implemented
+        pass
+        
+
+def fix_clip_values():
+    
+    """
+    
+    1) Copy list to clipboard
+    2) Run this function:
+        from crossref.utils import fix_clip_values as fc
+        fc()
+    3) Copy the printed result to an Excel file
+    
+    https://stackoverflow.com/questions/579687/how-do-i-copy-a-string-to-the-clipboard-on-windows-using-python
+    """
+    
+    #Python 3
+    from tkinter import Tk
+    temp_str = Tk().clipboard_get()
+    temp2 = temp_str.splitlines()
+    
+    output = [_clean_copied_option_values(x) for x in temp2]
+    for x in output:
+        print(x)
+    
+    #Tk().clipboard_set(output)
+    
+
+def load_filter_table(file_name):
+    
+    #Path
+    #
+    if not file_name.endswith('.tsv'):
+        file_name = file_name + '.tsv'
+                
+    package_path = path.split(__file__)[0]
+    root_path = path.split(package_path)[0]
+    file_path = path.join(root_path,'docs','options',file_name)
+
+    return pandas.read_csv(file_path,sep='\t')
+
+
+def get_valid_options(temp_str,lead_in_text):
+    """
+    This parses a string of the format:
+        
+        temp_str = 'These are the options: test1,test2,test3'
+        lead_in_text = 'options:'
+        
+        get_valid_options(temp_str,lead_in_text)
+        
+        => ['test1','test2','test3']
+    """
+    
+    I = temp_str.find(lead_in_text)
+    
+    temp_str2 = temp_str[I+len(lead_in_text):]
+    
+    temp_values = temp_str2.split(',')
+    
+    current_values = sorted([x.strip() for x in temp_values])
+    
+    return current_values
 
 def display_class(class_instance,pv,method_pv=None):
     
@@ -124,3 +225,14 @@ def assign_json(json_data, field_name, optional=True, default=None):
         
 def clean_dict_keys(d):
     return {x.replace('-', '_'): d[x] for x in d.keys()}
+
+
+def _clean_copied_option_values(str):
+    
+    str = str.strip()
+    
+    if str[-1] == ',':
+        return str[1:-2]
+    else:
+        return str[1:-1]
+    

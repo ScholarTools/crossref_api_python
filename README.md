@@ -4,7 +4,15 @@ Exposing the Crossref API in Python
 An implementation of:
 https://github.com/CrossRef/rest-api-doc
 
-## Motivation
+# Motivation and Functionality
+
+# Comparison to Other Libraries
+
+https://github.com/fabiobatalha/crossrefapi/
+
+# Setup 
+
+# In Depth Documentation 
 
 
 
