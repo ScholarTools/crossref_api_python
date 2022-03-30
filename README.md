@@ -14,5 +14,9 @@ https://github.com/fabiobatalha/crossrefapi/
 
 # In Depth Documentation 
 
+# Examples
+
+
+
 
 

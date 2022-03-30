@@ -40,7 +40,7 @@ import requests
 
 #Local Imports
 #------------------------
-#from . import search_values as sv
+from . import search_values as sv
 from . import errors
 from . import models
 from . import utils
@@ -135,25 +135,25 @@ class API(object):
     
     @staticmethod
     def get_search_options(key_name):
-        if key_name is 'cursor':
+        if key_name == 'cursor':
             pass
-        elif key_name is 'facet':
+        elif key_name == 'facet':
             pass
-        elif key_name is 'filter':
+        elif key_name == 'filter':
             pass
-        elif key_name is 'n_rows':
+        elif key_name == 'n_rows':
             return None
-        elif key_name is 'n_random':
+        elif key_name == 'n_random':
             return None
-        elif key_name is 'offset':
+        elif key_name == 'offset':
             return None
-        elif key_name is 'order':
+        elif key_name == 'order':
             return sv.order
-        elif key_name is 'query':
+        elif key_name == 'query':
             return None
-        elif key_name is 'select':
+        elif key_name == 'select':
             print('select')
-        elif key_name is 'sort_by':
+        elif key_name == 'sort_by':
             return sv.sort
             pass
             
@@ -368,7 +368,7 @@ class API(object):
 
     def work_types(self):
         """
-        
+        TODO: Cache this response
         """
         
         if self._work_types is None:
