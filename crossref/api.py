@@ -435,8 +435,8 @@ class API(object):
         Example
         -------
         import crossref
-        c = crossref.API()
-        m = c.doi_meta('10.1109/TNSRE.2011.2163145')
+        api = crossref.API()
+        m = api.doi_info('10.1109/TNSRE.2011.2163145')
         
         """
         
