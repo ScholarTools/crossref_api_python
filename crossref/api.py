@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 API documentation
-https://github.com/CrossRef/rest-api-doc/blob/master/rest_api.md
+https://api.crossref.org/swagger-ui/index.html
 """
 
 """
@@ -22,6 +22,14 @@ resource	description
 /prefixes/{owner_prefix}/works	returns list of works associated with specified owner_prefix
 /members/{member_id}/works	returns list of works associated with a CrossRef member (deposited by a CrossRef member)
 /journals/{issn}/works	returns a list of works in the given journal
+
+
+from crossref.api import API
+api = API()
+
+
+
+
 """
 
 VERSION = '0.7'
@@ -40,11 +48,12 @@ import requests
 
 #Local Imports
 #------------------------
-from . import search_values as sv
+from .search import search_values as sv
 from . import errors
 from . import models
 from . import utils
 from .utils import get_truncated_display_string as td
+from .utils import get_list_class_display as cld
 display_class = utils.display_class
 
 try:
@@ -227,7 +236,7 @@ class API(object):
         """     
         
         #TODO: return_type
-        if return_type is 'json':
+        if return_type == 'json' or object_fh is None:
             return json_data
         else:
             return object_fh(json_data,self)
@@ -335,9 +344,40 @@ class API(object):
         url = self.BASE_URL + 'members/'
         return self._make_get_request(url,models.MembersSearchResult,params,return_type)
     
-    def works(self,filter=None,n_rows=None,n_random=None,
-                     offset=None,query=None,sort_by=None,order=None,
-                     facet=None,cursor=None,select=None,return_type=None):
+    
+    def works_doi(self,doi,return_type=None):
+        
+        """
+        
+        
+        Examples
+        ---------
+        from crossref.api import API
+        api = API()
+        doi = '10.1016/j.urology.2023.01.012'
+        result = api.works_doi(doi)
+        
+        
+        """
+        
+        params = {}
+        
+        url = self.BASE_URL + f'works/{doi}/'
+        return self._make_get_request(url,None,params,return_type)
+
+    
+    def works(self,
+              filter=None,
+              n_rows=None,
+              n_random=None,
+              offset=None,
+              query=None,
+              sort_by=None,
+              order=None,
+              facet=None,
+              cursor=None,
+              select=None,
+              return_type=None):
         """
         
         Parameters
@@ -352,6 +392,12 @@ class API(object):
         Invalid options
         ---------------
         sample
+        
+        
+        Example
+        -------
+        
+        
         
         TODO: Do we get a 'next' link?
         TODO: Make sure the model methods show in the display ...
@@ -494,6 +540,37 @@ class API(object):
         """
         url = self.BASE_URL + 'types/' + type_id
         return self._make_get_request(url,models.pass_through)
+    
+    def __repr__(self):
+        """
+        
+        
+        self.debug = debug
+        if session is None:
+            self.session = requests.Session()
+        else:
+            self.session = session
+        self._work_types = None
+        self.last_error = None
+        self.rate_limit = 50
+        self.rate_limit_interval = 1
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+        pv = [
+            'debug',self.debug,
+            'session',cld(self.session),
+            'last_error',cld(self.last_error),
+            'rate_limit',self.rate_limit,
+            'rate_limit_interval',self.rate_limit_interval,
+            'retrieval',cld(self.retrieval),
+            'methods()','------------------------',
+            ]
+        return utils.property_values_to_string(pv)
 
         
 def _validate_config(user_config):
